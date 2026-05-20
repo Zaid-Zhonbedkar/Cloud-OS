@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudeOS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{
+    --taskbar:#1a1a2e;
+    --taskbar-item:#16213e;
+    --window-title:#0f3460;
+    --window-bg:#f0f2f5;
+    --accent:#e94560;
+    --accent2:#0f3460;
+    --text:#1a1a2e;
+    --text-muted:#666;
+    --border:#dde2ec;
+    --input-bg:#fff;
+    --sidebar-bg:#1e2235;
+    --sidebar-text:#a0aec0;
+    --folder:#f6c90e;
+    --file-text:#4285f4;
+    --file-img:#ea4335;
+    --file-pdf:#e91e63;
+    --glass:rgba(255,255,255,0.12);
+  }
+  body{
+    font-family:'Inter',sans-serif;
+    background:linear-gradient(135deg,#0f3460 0%,#16213e 50%,#1a1a2e 100%);
+    width:100vw;height:100vh;overflow:hidden;
+    user-select:none;
+  }
+  /* DESKTOP */
+  #desktop{
+    position:absolute;top:0;left:0;right:0;bottom:48px;
+    background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><defs><radialGradient id="g" cx="50%25" cy="50%25" r="50%25"><stop offset="0%25" stop-color="%23e94560" stop-opacity="0.05"/><stop offset="100%25" stop-color="transparent"/></radialGradient></defs><rect width="400" height="400" fill="url(%23g)"/></svg>');
+  }
+  /* DESKTOP ICONS */
+  .desktop-icon{
+    position:absolute;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    padding:8px 6px;border-radius:8px;cursor:pointer;
+    width:80px;transition:background .15s;
+  }
+  .desktop-icon:hover{background:rgba(255,255,255,0.15);}
+  .desktop-icon:active{background:rgba(255,255,255,0.25);}
+  .desktop-icon .icon-img{
+    width:52px;height:52px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;box-shadow:0 4px 15px rgba(0,0,0,0.3);
+  }
+  .desktop-icon span{
+    font-size:11px;color:#fff;text-align:center;
+    text-shadow:0 1px 3px rgba(0,0,0,0.8);line-height:1.3;
+    word-break:break-word;
+  }
+  /* TASKBAR */
+  #taskbar{
+    position:absolute;bottom:0;left:0;right:0;height:48px;
+    background:rgba(15,20,40,0.95);backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,0.08);
+    display:flex;align-items:center;padding:0 8px;gap:4px;
+    z-index:9999;
+  }
+  #taskbar-start{
+    width:40px;height:36px;border-radius:8px;
+    background:var(--accent);border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;color:#fff;margin-right:4px;
+    transition:background .15s;flex-shrink:0;
+  }
+  #taskbar-start:hover{background:#c73652;}
+  .taskbar-item{
+    height:36px;padding:0 10px;border-radius:6px;
+    background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);
+    color:rgba(255,255,255,0.85);font-size:12px;font-family:'Inter',sans-serif;
+    cursor:pointer;display:flex;align-items:center;gap:6px;
+    transition:background .15s;white-space:nowrap;
+  }
+  .taskbar-item:hover{background:rgba(255,255,255,0.15);}
+  .taskbar-item.active{background:rgba(233,69,96,0.3);border-color:var(--accent);}
+  #taskbar-clock{
+    margin-left:auto;color:rgba(255,255,255,0.9);font-size:12px;
+    text-align:right;line-height:1.4;padding:0 12px;white-space:nowrap;
+  }
+  /* WINDOWS */
+  .window{
+    position:absolute;background:#f0f2f5;
+    border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    display:flex;flex-direction:column;overflow:hidden;
+    border:1px solid rgba(255,255,255,0.15);
+    min-width:300px;min-height:200px;
+  }
+  .window-title-bar{
+    height:36px;background:var(--window-title);
+    display:flex;align-items:center;padding:0 12px;gap:8px;
+    cursor:grab;flex-shrink:0;
+  }
+  .window-title-bar:active{cursor:grabbing;}
+  .win-btn{
+    width:13px;height:13px;border-radius:50%;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:9px;
+    transition:filter .15s;
+  }
+  .win-btn:hover{filter:brightness(1.3);}
+  .win-close{background:#e94560;}
+  .win-min{background:#f6c90e;}
+  .win-max{background:#0f9e6e;}
+  .window-title-text{
+    color:rgba(255,255,255,0.9);font-size:13px;font-weight:500;
+    flex:1;margin-left:6px;pointer-events:none;
+  }
+  .window-body{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+  .resize-handle{
+    position:absolute;bottom:0;right:0;width:14px;height:14px;cursor:se-resize;
+    background:linear-gradient(135deg,transparent 50%,rgba(255,255,255,0.2) 50%);
+  }
+  /* START MENU */
+  #start-menu{
+    position:absolute;bottom:52px;left:4px;
+    width:320px;background:rgba(15,20,40,0.97);
+    backdrop-filter:blur(30px);border-radius:12px;
+    border:1px solid rgba(255,255,255,0.12);
+    padding:16px;display:none;z-index:99999;
+    box-shadow:0 -10px 40px rgba(0,0,0,0.6);
+  }
+  #start-menu.open{display:block;}
+  #start-menu h3{color:rgba(255,255,255,0.9);font-size:13px;font-weight:600;margin-bottom:12px;}
+  .start-app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .start-app-item{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:8px 4px;border-radius:8px;cursor:pointer;
+    background:rgba(255,255,255,0.05);transition:background .15s;
+  }
+  .start-app-item:hover{background:rgba(255,255,255,0.12);}
+  .start-app-item .icon-img{width:38px;height:38px;border-radius:8px;font-size:20px;display:flex;align-items:center;justify-content:center;}
+  .start-app-item span{font-size:10px;color:rgba(255,255,255,0.7);text-align:center;}
+  /* APPS PANEL */
+  #apps-panel{
+    position:absolute;bottom:52px;left:0;right:0;
+    background:rgba(10,13,30,0.97);backdrop-filter:blur(30px);
+    border-top:1px solid rgba(255,255,255,0.1);
+    padding:24px;display:none;z-index:99998;max-height:70vh;overflow-y:auto;
+  }
+  #apps-panel.open{display:block;}
+  #apps-panel h2{color:#fff;font-size:20px;font-weight:600;margin-bottom:20px;}
+  .apps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:16px;}
+  .app-item{
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    padding:16px 8px;border-radius:12px;cursor:pointer;
+    background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);
+    transition:all .15s;
+  }
+  .app-item:hover{background:rgba(255,255,255,0.1);transform:translateY(-2px);}
+  .app-item .icon-img{width:52px;height:52px;border-radius:14px;font-size:28px;display:flex;align-items:center;justify-content:center;}
+  .app-item span{font-size:12px;color:rgba(255,255,255,0.75);text-align:center;}
+  /* FILE EXPLORER */
+  .explorer-layout{display:flex;height:100%;overflow:hidden;}
+  .explorer-sidebar{
+    width:180px;background:#1e2235;flex-shrink:0;
+    padding:8px;overflow-y:auto;border-right:1px solid rgba(255,255,255,0.06);
+  }
+  .sidebar-section{margin-bottom:16px;}
+  .sidebar-label{font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);
+    text-transform:uppercase;letter-spacing:0.8px;padding:0 8px;margin-bottom:4px;}
+  .sidebar-item{
+    display:flex;align-items:center;gap:8px;padding:6px 8px;
+    border-radius:6px;cursor:pointer;color:rgba(255,255,255,0.7);
+    font-size:12px;transition:background .15s;
+  }
+  .sidebar-item:hover{background:rgba(255,255,255,0.08);}
+  .sidebar-item.active{background:rgba(233,69,96,0.2);color:#fff;}
+  .explorer-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f8f9fc;}
+  .explorer-toolbar{
+    height:40px;background:#fff;border-bottom:1px solid #e2e8f0;
+    display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0;
+  }
+  .explorer-path{
+    flex:1;background:#f0f2f5;border:1px solid #dde2ec;border-radius:5px;
+    padding:4px 10px;font-size:12px;color:#444;font-family:'Inter',sans-serif;
+  }
+  .explorer-content{flex:1;padding:16px;overflow-y:auto;display:flex;flex-wrap:wrap;align-content:flex-start;gap:10px;}
+  .file-item{
+    width:80px;display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:8px 4px;border-radius:8px;cursor:pointer;transition:background .15s;
+  }
+  .file-item:hover{background:rgba(0,0,0,0.05);}
+  .file-item:active{background:rgba(0,0,0,0.1);}
+  .file-icon{font-size:38px;line-height:1;}
+  .file-name{font-size:11px;color:#333;text-align:center;word-break:break-all;line-height:1.3;}
+  .explorer-statusbar{
+    height:28px;background:#fff;border-top:1px solid #e2e8f0;
+    display:flex;align-items:center;padding:0 12px;font-size:11px;color:#888;flex-shrink:0;
+  }
+  /* TEXT EDITOR */
+  .editor-toolbar{
+    height:36px;background:#2d3748;display:flex;align-items:center;gap:4px;padding:0 8px;flex-shrink:0;
+  }
+  .editor-btn{
+    padding:4px 8px;background:rgba(255,255,255,0.1);border:none;
+    color:rgba(255,255,255,0.8);font-size:11px;border-radius:4px;cursor:pointer;
+    font-family:'Inter',sans-serif;transition:background .15s;
+  }
+  .editor-btn:hover{background:rgba(255,255,255,0.2);}
+  .editor-area{flex:1;border:none;resize:none;padding:16px;font-size:14px;font-family:'Courier New',monospace;background:#1a202c;color:#e2e8f0;line-height:1.7;outline:none;}
+  .editor-statusbar{height:24px;background:#2d3748;display:flex;align-items:center;padding:0 12px;font-size:11px;color:rgba(255,255,255,0.5);flex-shrink:0;}
+  /* AI ASSISTANT */
+  .ai-layout{display:flex;flex-direction:column;height:100%;background:#f8f9fc;}
+  .ai-header{background:linear-gradient(135deg,#0f3460,#1a1a2e);padding:12px 16px;flex-shrink:0;display:flex;align-items:center;gap:10px;}
+  .ai-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .ai-header-text h3{color:#fff;font-size:14px;font-weight:600;}
+  .ai-header-text p{color:rgba(255,255,255,0.5);font-size:11px;}
+  .ai-model-badge{margin-left:auto;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);font-size:10px;padding:4px 8px;border-radius:20px;border:1px solid rgba(255,255,255,0.15);}
+  .ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .ai-msg{max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;}
+  .ai-msg.user{background:var(--accent);color:#fff;align-self:flex-end;border-radius:12px 12px 2px 12px;}
+  .ai-msg.ai{background:#fff;color:#333;align-self:flex-start;border-radius:12px 12px 12px 2px;border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+  .ai-msg.ai.thinking{color:#888;font-style:italic;}
+  .ai-input-area{background:#fff;border-top:1px solid #e2e8f0;padding:12px;flex-shrink:0;display:flex;gap:8px;}
+  .ai-input{flex:1;border:1px solid #dde2ec;border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Inter',sans-serif;resize:none;outline:none;height:60px;}
+  .ai-input:focus{border-color:var(--accent);}
+  .ai-send{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0 16px;cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;transition:background .15s;}
+  .ai-send:hover{background:#c73652;}
+  .ai-send:disabled{background:#ccc;cursor:not-allowed;}
+  /* PDF VIEWER */
+  .pdf-toolbar{background:#323639;height:40px;display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0;}
+  .pdf-btn{background:rgba(255,255,255,0.1);border:none;color:#fff;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif;}
+  .pdf-btn:hover{background:rgba(255,255,255,0.2);}
+  .pdf-main{flex:1;background:#525659;display:flex;flex-direction:column;align-items:center;padding:20px;overflow-y:auto;gap:16px;}
+  .pdf-drop{
+    width:100%;max-width:500px;background:rgba(255,255,255,0.1);
+    border:2px dashed rgba(255,255,255,0.3);border-radius:12px;
+    padding:40px;text-align:center;color:rgba(255,255,255,0.7);cursor:pointer;
+  }
+  .pdf-drop h3{font-size:16px;margin-bottom:8px;}
+  .pdf-drop p{font-size:12px;color:rgba(255,255,255,0.4);}
+  #pdf-canvas{background:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.5);max-width:100%;}
+  /* SETTINGS */
+  .settings-layout{display:flex;height:100%;overflow:hidden;}
+  .settings-nav{width:180px;background:#1e2235;padding:12px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.06);}
+  .settings-nav-item{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:2px;transition:background .15s;display:flex;align-items:center;gap:8px;}
+  .settings-nav-item:hover{background:rgba(255,255,255,0.08);}
+  .settings-nav-item.active{background:rgba(233,69,96,0.25);color:#fff;}
+  .settings-main{flex:1;padding:20px;overflow-y:auto;background:#f8f9fc;}
+  .settings-section h3{font-size:16px;font-weight:600;color:#1a1a2e;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #e2e8f0;}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f2f5;}
+  .settings-row-info h4{font-size:13px;font-weight:500;color:#333;margin-bottom:2px;}
+  .settings-row-info p{font-size:11px;color:#888;}
+  .toggle{width:40px;height:22px;background:#ddd;border-radius:11px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+  .toggle.on{background:var(--accent);}
+  .toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s;}
+  .toggle.on::after{left:21px;}
+  /* GROQ CONFIG */
+  .groq-input{width:100%;border:1px solid #dde2ec;border-radius:6px;padding:8px 12px;font-size:13px;font-family:'Inter',sans-serif;margin-top:4px;outline:none;}
+  .groq-input:focus{border-color:var(--accent);}
+  .groq-save{margin-top:8px;background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif;}
+  /* SCROLLBARS */
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2);border-radius:3px;}
+  /* CONTEXT MENU */
+  #ctx-menu{
+    position:absolute;background:rgba(20,25,45,0.97);backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.12);border-radius:8px;
+    padding:4px;min-width:160px;display:none;z-index:999999;
+    box-shadow:0 8px 30px rgba(0,0,0,0.6);
+  }
+  .ctx-item{padding:7px 12px;border-radius:4px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.85);display:flex;align-items:center;gap:8px;}
+  .ctx-item:hover{background:rgba(233,69,96,0.25);}
+  .ctx-sep{height:1px;background:rgba(255,255,255,0.08);margin:4px 0;}
+</style>
+</head>
+<body>
+
+<!-- DESKTOP -->
+<div id="desktop"></div>
+
+<!-- TASKBAR -->
+<div id="taskbar">
+  <button id="taskbar-start" onclick="toggleStart()" title="Start Menu">⊞</button>
+  <button class="taskbar-item" onclick="toggleAppsPanel()" id="apps-taskbar-btn">⊞ All Apps</button>
+  <div id="taskbar-open-apps" style="display:flex;gap:4px;overflow:hidden;flex:1;"></div>
+  <div id="taskbar-clock"></div>
+</div>
+
+<!-- START MENU -->
+<div id="start-menu">
+  <h3>📌 Pinned Apps</h3>
+  <div class="start-app-grid" id="start-app-grid"></div>
+</div>
+
+<!-- APPS PANEL -->
+<div id="apps-panel">
+  <h2>All Apps</h2>
+  <div class="apps-grid" id="all-apps-grid"></div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="ctxNewFile()">📄 New Text File</div>
+  <div class="ctx-item" onclick="ctxNewFolder()">📁 New Folder</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="ctxRefresh()">🔄 Refresh Desktop</div>
+</div>
+
+<script>
+// ===== STORAGE HELPERS =====
+const LS = {
+  get(k,def=null){try{const v=localStorage.getItem('cloude_os_'+k);return v?JSON.parse(v):def;}catch{return def;}},
+  set(k,v){try{localStorage.setItem('cloude_os_'+k,JSON.stringify(v));}catch{}}
+};
+
+// ===== WINDOW MANAGER =====
+let wZ = 100;
+let openWindows = {};
+function bringToFront(win){win.style.zIndex=++wZ;updateTaskbar();}
+
+function makeDraggable(win,bar){
+  let dx,dy,dragging=false;
+  bar.addEventListener('mousedown',e=>{
+    if(e.target.classList.contains('win-btn'))return;
+    dragging=true;dx=e.clientX-win.offsetLeft;dy=e.clientY-win.offsetTop;
+    bringToFront(win);document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+  });
+  function onMove(e){if(!dragging)return;let nx=e.clientX-dx,ny=e.clientY-dy;nx=Math.max(0,Math.min(nx,window.innerWidth-win.offsetWidth));ny=Math.max(0,Math.min(ny,window.innerHeight-48-win.offsetHeight));win.style.left=nx+'px';win.style.top=ny+'px';}
+  function onUp(){dragging=false;document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+}
+
+function makeResizable(win,handle){
+  let resizing=false,sx,sy,sw,sh;
+  handle.addEventListener('mousedown',e=>{
+    resizing=true;e.stopPropagation();sx=e.clientX;sy=e.clientY;sw=win.offsetWidth;sh=win.offsetHeight;
+    document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+  });
+  function onMove(e){if(!resizing)return;win.style.width=Math.max(300,sw+e.clientX-sx)+'px';win.style.height=Math.max(200,sh+e.clientY-sy)+'px';}
+  function onUp(){resizing=false;document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+}
+
+function createWindow(id,title,icon,w,h,contentFn){
+  if(openWindows[id]){bringToFront(openWindows[id]);openWindows[id].style.display='flex';updateTaskbar();return openWindows[id];}
+  const win=document.createElement('div');
+  win.className='window';win.id='win-'+id;
+  const left=50+Math.random()*200,top=30+Math.random()*80;
+  win.style.cssText=`left:${left}px;top:${top}px;width:${w}px;height:${h}px;z-index:${++wZ};`;
+  win.innerHTML=`
+    <div class="window-title-bar">
+      <button class="win-btn win-close" onclick="closeWindow('${id}')"></button>
+      <button class="win-btn win-min" onclick="minWindow('${id}')"></button>
+      <button class="win-btn win-max" onclick="maxWindow('${id}')"></button>
+      <span class="window-title-text">${icon} ${title}</span>
+    </div>
+    <div class="window-body" id="win-body-${id}"></div>
+    <div class="resize-handle" id="resize-${id}"></div>
+  `;
+  document.getElementById('desktop').appendChild(win);
+  makeDraggable(win,win.querySelector('.window-title-bar'));
+  makeResizable(win,win.querySelector('.resize-handle'));
+  win.addEventListener('mousedown',()=>bringToFront(win));
+  openWindows[id]=win;
+  const body=document.getElementById('win-body-'+id);
+  if(contentFn)contentFn(body);
+  updateTaskbar();
+  return win;
+}
+
+function closeWindow(id){
+  const win=openWindows[id];
+  if(win){win.remove();delete openWindows[id];updateTaskbar();}
+}
+function minWindow(id){
+  const win=openWindows[id];
+  if(win){win.style.display=win.style.display==='none'?'flex':'none';updateTaskbar();}
+}
+let maxStates={};
+function maxWindow(id){
+  const win=openWindows[id];
+  if(!win)return;
+  if(!maxStates[id]){
+    maxStates[id]={l:win.style.left,t:win.style.top,w:win.style.width,h:win.style.height};
+    win.style.left='0';win.style.top='0';win.style.width='100vw';win.style.height='calc(100vh - 48px)';win.style.borderRadius='0';
+  }else{
+    const s=maxStates[id];win.style.left=s.l;win.style.top=s.t;win.style.width=s.w;win.style.height=s.h;win.style.borderRadius='10px';delete maxStates[id];
+  }
+}
+
+function updateTaskbar(){
+  const bar=document.getElementById('taskbar-open-apps');
+  bar.innerHTML='';
+  Object.entries(openWindows).forEach(([id,win])=>{
+    const app=apps.find(a=>a.id===id)||{icon:'🖥️',name:id};
+    const btn=document.createElement('button');
+    btn.className='taskbar-item'+(win.style.display!=='none'?' active':'');
+    btn.innerHTML=`${app.icon} ${app.name}`;
+    btn.onclick=()=>minWindow(id);
+    bar.appendChild(btn);
+  });
+}
+
+// ===== CLOCK =====
+function updateClock(){
+  const now=new Date();
+  const time=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const date=now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('taskbar-clock').innerHTML=`${time}<br>${date}`;
+}
+setInterval(updateClock,1000);updateClock();
+
+// ===== FILE SYSTEM =====
+function getFS(){return LS.get('fs',{
+  'Desktop':{type:'folder',children:{}},
+  'Documents':{type:'folder',children:{'Welcome.txt':{type:'file',ext:'txt',content:'Welcome to CloudeOS!\n\nThis is your personal operating system built with love.\n\nYou can create, edit, and delete files and folders.\nUse the AI Assistant for help with anything!\n\n— CloudeOS Team'}}},
+  'Pictures':{type:'folder',children:{}},
+  'Downloads':{type:'folder',children:{}},
+});}
+function saveFS(fs){LS.set('fs',fs);}
+
+// ===== FILE EXPLORER =====
+let explorerPath=[];
+function openExplorer(startPath=[]){
+  explorerPath=[...startPath];
+  const win=createWindow('explorer','File Explorer','📁',700,500,buildExplorerUI);
+  if(openWindows['explorer']&&document.getElementById('win-body-explorer').children.length>0){
+    renderExplorerContent();
+  }
+}
+function buildExplorerUI(body){
+  body.style.overflow='hidden';
+  body.innerHTML=`
+    <div class="explorer-layout">
+      <div class="explorer-sidebar" id="exp-sidebar"></div>
+      <div class="explorer-main">
+        <div class="explorer-toolbar">
+          <button class="editor-btn" onclick="explorerBack()" title="Back">◀</button>
+          <input class="explorer-path" id="exp-path" readonly value="This PC">
+          <button class="editor-btn" onclick="explorerRefresh()">🔄</button>
+          <button class="editor-btn" onclick="explorerNewFolder()">📁+</button>
+          <button class="editor-btn" onclick="explorerNewFile()">📄+</button>
+        </div>
+        <div class="explorer-content" id="exp-content"></div>
+        <div class="explorer-statusbar" id="exp-status">Ready</div>
+      </div>
+    </div>`;
+  renderExplorerSidebar();
+  renderExplorerContent();
+}
+function renderExplorerSidebar(){
+  const sb=document.getElementById('exp-sidebar');if(!sb)return;
+  const fs=getFS();
+  sb.innerHTML=`
+    <div class="sidebar-section">
+      <div class="sidebar-label">Quick Access</div>
+      <div class="sidebar-item ${explorerPath.length===0?'active':''}" onclick="explorerNavigate([])">🖥️ This PC</div>
+      ${Object.keys(fs).map(k=>`<div class="sidebar-item ${JSON.stringify(explorerPath)==='["'+k+'"]'?'active':''}" onclick='explorerNavigate(["${k}"])'>${k==='Documents'?'📄':k==='Pictures'?'🖼️':k==='Downloads'?'⬇️':'📁'} ${k}</div>`).join('')}
+    </div>`;
+}
+function renderExplorerContent(){
+  const content=document.getElementById('exp-content');
+  const status=document.getElementById('exp-status');
+  const pathInput=document.getElementById('exp-path');
+  if(!content)return;
+  const fs=getFS();
+  let current=fs;
+  for(const seg of explorerPath){
+    if(current[seg]&&current[seg].children)current=current[seg].children;
+    else{current={};break;}
+  }
+  const pathStr=explorerPath.length===0?'This PC > ':('This PC > '+explorerPath.join(' > '));
+  if(pathInput)pathInput.value=pathStr;
+  content.innerHTML='';
+  const entries=Object.entries(current);
+  if(entries.length===0){content.innerHTML='<div style="width:100%;text-align:center;color:#aaa;padding:40px;font-size:13px;">This folder is empty</div>';}
+  entries.forEach(([name,item])=>{
+    const div=document.createElement('div');div.className='file-item';
+    const isFolder=item.type==='folder';
+    const icon=isFolder?'📁':getFileIcon(item.ext||name.split('.').pop());
+    div.innerHTML=`<div class="file-icon">${icon}</div><div class="file-name">${name}</div>`;
+    div.ondblclick=()=>{
+      if(isFolder)explorerNavigate([...explorerPath,name]);
+      else openFile(name,item);
+    };
+    div.oncontextmenu=e=>{e.preventDefault();showFileCtx(e,name,item);};
+    content.appendChild(div);
+  });
+  if(status)status.textContent=`${entries.length} item${entries.length!==1?'s':''}`;
+  renderExplorerSidebar();
+}
+function getFileIcon(ext){
+  const icons={'txt':'📝','md':'📝','js':'🟨','html':'🌐','css':'🎨','json':'📋','png':'🖼️','jpg':'🖼️','jpeg':'🖼️','gif':'🖼️','pdf':'📕','mp3':'🎵','mp4':'🎬','zip':'🗜️'};
+  return icons[ext?.toLowerCase()]||'📄';
+}
+function explorerNavigate(path){explorerPath=path;renderExplorerContent();}
+function explorerBack(){if(explorerPath.length>0){explorerPath.pop();renderExplorerContent();}}
+function explorerRefresh(){renderExplorerContent();}
+function explorerNewFolder(){
+  const name=prompt('Folder name:');if(!name)return;
+  const fs=getFS();let cur=fs;
+  for(const seg of explorerPath){if(cur[seg]?.children)cur=cur[seg].children;}
+  cur[name]={type:'folder',children:{}};saveFS(fs);renderExplorerContent();
+}
+function explorerNewFile(){
+  const name=prompt('File name (include extension, e.g. notes.txt):');if(!name)return;
+  const fs=getFS();let cur=fs;
+  for(const seg of explorerPath){if(cur[seg]?.children)cur=cur[seg].children;}
+  const ext=name.split('.').pop();
+  cur[name]={type:'file',ext,content:''};saveFS(fs);renderExplorerContent();
+}
+function openFile(name,item){
+  if(['txt','md','js','html','css','json','py'].includes(item.ext||'')){
+    openTextEditor(name,item.content||'');
+  }else if(item.ext==='pdf'){
+    openPDFViewer();
+  }else{
+    alert(`Cannot open ${name} — unsupported file type.`);
+  }
+}
+let fileCtxTarget=null;
+function showFileCtx(e,name,item){
+  fileCtxTarget={name,item};
+  const m=document.getElementById('ctx-menu');
+  m.style.display='block';m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';
+  m.innerHTML=`
+    <div class="ctx-item" onclick="ctxOpen()">📂 Open</div>
+    <div class="ctx-item" onclick="ctxRename()">✏️ Rename</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="ctxDelete()" style="color:#e94560">🗑️ Delete</div>`;
+}
+function ctxOpen(){if(fileCtxTarget)openFile(fileCtxTarget.name,fileCtxTarget.item);hideCtx();}
+function ctxRename(){
+  if(!fileCtxTarget)return;
+  const newName=prompt('New name:',fileCtxTarget.name);if(!newName)return;
+  const fs=getFS();let cur=fs;
+  for(const seg of explorerPath){if(cur[seg]?.children)cur=cur[seg].children;}
+  cur[newName]=cur[fileCtxTarget.name];delete cur[fileCtxTarget.name];saveFS(fs);renderExplorerContent();hideCtx();
+}
+function ctxDelete(){
+  if(!fileCtxTarget)return;
+  if(!confirm(`Delete "${fileCtxTarget.name}"?`))return;
+  const fs=getFS();let cur=fs;
+  for(const seg of explorerPath){if(cur[seg]?.children)cur=cur[seg].children;}
+  delete cur[fileCtxTarget.name];saveFS(fs);renderExplorerContent();hideCtx();
+}
+
+// ===== TEXT EDITOR =====
+let editorFile={name:'Untitled.txt',saved:true};
+function openTextEditor(name='Untitled.txt',content=''){
+  editorFile={name,saved:true};
+  const win=createWindow('editor','Text Editor — '+name,'📝',600,450,body=>{
+    body.style.display='flex';body.style.flexDirection='column';body.style.overflow='hidden';
+    body.innerHTML=`
+      <div class="editor-toolbar">
+        <button class="editor-btn" onclick="editorSave()">💾 Save</button>
+        <button class="editor-btn" onclick="editorNew()">📄 New</button>
+        <button class="editor-btn" onclick="editorOpen()">📂 Open</button>
+        <span style="color:rgba(255,255,255,0.4);font-size:11px;margin-left:8px" id="editor-saved-indicator">✓ Saved</span>
+      </div>
+      <textarea class="editor-area" id="editor-textarea" spellcheck="false">${escHtml(content)}</textarea>
+      <div class="editor-statusbar" id="editor-statusbar">Ln 1, Col 1 | ${name}</div>`;
+    const ta=body.querySelector('#editor-textarea');
+    ta.addEventListener('input',()=>{
+      editorFile.saved=false;
+      document.getElementById('editor-saved-indicator').textContent='● Unsaved';
+      const lines=ta.value.substr(0,ta.selectionStart).split('\n');
+      document.getElementById('editor-statusbar').textContent=`Ln ${lines.length}, Col ${lines[lines.length-1].length+1} | ${editorFile.name}`;
+    });
+  });
+}
+function editorSave(){
+  const ta=document.getElementById('editor-textarea');if(!ta)return;
+  const fs=getFS();let cur=fs;
+  for(const seg of explorerPath){if(cur[seg]?.children)cur=cur[seg].children;}
+  const ext=editorFile.name.split('.').pop();
+  cur[editorFile.name]={type:'file',ext,content:ta.value};
+  saveFS(fs);editorFile.saved=true;
+  const ind=document.getElementById('editor-saved-indicator');if(ind)ind.textContent='✓ Saved';
+}
+function editorNew(){openTextEditor();}
+function editorOpen(){openExplorer();}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ===== AI ASSISTANT (GROQ) =====
+let aiHistory=[];
+function openAIAssistant(){
+  createWindow('ai','AI Assistant','🤖',480,560,buildAIUI);
+}
+function buildAIUI(body){
+  aiHistory=LS.get('ai_history',[]);
+  body.style.overflow='hidden';body.style.display='flex';body.style.flexDirection='column';
+  body.innerHTML=`
+    <div class="ai-layout">
+      <div class="ai-header">
+        <div class="ai-avatar">🤖</div>
+        <div class="ai-header-text">
+          <h3>CloudeOS AI</h3>
+          <p>Powered by Groq / Llama</p>
+        </div>
+        <span class="ai-model-badge" id="ai-model-badge">llama-3.3-70b</span>
+      </div>
+      <div class="ai-messages" id="ai-messages"></div>
+      <div class="ai-input-area">
+        <textarea class="ai-input" id="ai-input" placeholder="Ask me anything..." onkeydown="aiKeydown(event)"></textarea>
+        <button class="ai-send" id="ai-send-btn" onclick="aiSend()">Send</button>
+      </div>
+    </div>`;
+  renderAIMessages();
+  if(aiHistory.length===0){
+    addAIMessage('ai','Hi! I\'m your CloudeOS AI assistant. Ask me anything — I can help with writing, coding, math, and more. 🚀\n\n*Note: Set your Groq API key in Settings → AI to enable responses.*');
+  }
+}
+function renderAIMessages(){
+  const container=document.getElementById('ai-messages');if(!container)return;
+  container.innerHTML=aiHistory.map(m=>`<div class="ai-msg ${m.role==='user'?'user':'ai'}">${escNl(m.content)}</div>`).join('');
+  container.scrollTop=container.scrollHeight;
+}
+function escNl(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+function addAIMessage(role,content){
+  aiHistory.push({role,content});
+  LS.set('ai_history',aiHistory.slice(-50));
+  renderAIMessages();
+}
+function aiKeydown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();aiSend();}}
+async function aiSend(){
+  const input=document.getElementById('ai-input');
+  const btn=document.getElementById('ai-send-btn');
+  if(!input||!btn)return;
+  const text=input.value.trim();if(!text)return;
+  const apiKey=LS.get('groq_api_key','');
+  if(!apiKey){
+    addAIMessage('ai','⚠️ No Groq API key set. Go to Settings → AI to add your key. Get a free key at console.groq.com');
+    return;
+  }
+  input.value='';addAIMessage('user',text);
+  btn.disabled=true;
+  const thinkingDiv=document.createElement('div');
+  thinkingDiv.className='ai-msg ai thinking';thinkingDiv.textContent='Thinking...';
+  document.getElementById('ai-messages').appendChild(thinkingDiv);
+  document.getElementById('ai-messages').scrollTop=9999;
+  try{
+    const msgs=aiHistory.slice(-10).map(m=>({role:m.role==='ai'?'assistant':m.role,content:m.content}));
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'system',content:'You are a helpful AI assistant built into CloudeOS. Be concise and helpful.'},...msgs],max_tokens:1024})
+    });
+    const data=await res.json();
+    thinkingDiv.remove();
+    if(data.choices&&data.choices[0]){
+      addAIMessage('ai',data.choices[0].message.content);
+    }else{
+      addAIMessage('ai','Error: '+JSON.stringify(data.error||data));
+    }
+  }catch(err){
+    thinkingDiv.remove();addAIMessage('ai','Network error: '+err.message);
+  }
+  btn.disabled=false;
+}
+
+// ===== PDF VIEWER =====
+function openPDFViewer(){
+  createWindow('pdf','PDF Viewer','📕',650,520,body=>{
+    body.style.display='flex';body.style.flexDirection='column';body.style.overflow='hidden';
+    body.innerHTML=`
+      <div class="pdf-toolbar">
+        <button class="pdf-btn" onclick="pdfPrev()">◀ Prev</button>
+        <span style="color:#fff;font-size:12px;padding:0 8px" id="pdf-page-info">No file</span>
+        <button class="pdf-btn" onclick="pdfNext()">Next ▶</button>
+        <button class="pdf-btn" onclick="pdfZoomOut()">🔍-</button>
+        <span style="color:#ccc;font-size:11px;min-width:40px;text-align:center" id="pdf-zoom">100%</span>
+        <button class="pdf-btn" onclick="pdfZoomIn()">🔍+</button>
+        <label class="pdf-btn" style="cursor:pointer">📂 Open<input type="file" accept=".pdf" style="display:none" onchange="pdfLoad(event)"></label>
+      </div>
+      <div class="pdf-main" id="pdf-main">
+        <div class="pdf-drop" onclick="this.querySelector('input').click()">
+          <h3>📕 Open a PDF</h3>
+          <p>Click to browse or drop a PDF file here</p>
+          <input type="file" accept=".pdf" style="display:none" onchange="pdfLoad(event)">
+        </div>
+      </div>`;
+  });
+}
+let pdfDoc=null,pdfPage=1,pdfScale=1.5;
+async function pdfLoad(e){
+  const file=e.target.files[0];if(!file)return;
+  const ab=await file.arrayBuffer();
+  if(!window.pdfjsLib){
+    const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    document.head.appendChild(s);
+    await new Promise(r=>s.onload=r);
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  pdfDoc=await pdfjsLib.getDocument({data:ab}).promise;
+  pdfPage=1;pdfScale=1.5;pdfRender();
+}
+async function pdfRender(){
+  if(!pdfDoc)return;
+  const page=await pdfDoc.getPage(pdfPage);
+  const vp=page.getViewport({scale:pdfScale});
+  const main=document.getElementById('pdf-main');if(!main)return;
+  main.innerHTML='<canvas id="pdf-canvas"></canvas>';
+  const canvas=document.getElementById('pdf-canvas');
+  canvas.width=vp.width;canvas.height=vp.height;
+  await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  document.getElementById('pdf-page-info').textContent=`Page ${pdfPage} / ${pdfDoc.numPages}`;
+  document.getElementById('pdf-zoom').textContent=Math.round(pdfScale*100/1.5*100)+'%';
+}
+function pdfPrev(){if(pdfPage>1){pdfPage--;pdfRender();}}
+function pdfNext(){if(pdfDoc&&pdfPage<pdfDoc.numPages){pdfPage++;pdfRender();}}
+function pdfZoomIn(){pdfScale=Math.min(pdfScale*1.25,6);pdfRender();}
+function pdfZoomOut(){pdfScale=Math.max(pdfScale*0.8,0.5);pdfRender();}
+
+// ===== SETTINGS =====
+function openSettings(){
+  createWindow('settings','Settings','⚙️',580,430,body=>{
+    body.style.overflow='hidden';
+    body.innerHTML=`
+      <div class="settings-layout">
+        <div class="settings-nav">
+          <div class="settings-nav-item active" onclick="settingsNav('ai',this)">🤖 AI / Groq</div>
+          <div class="settings-nav-item" onclick="settingsNav('appearance',this)">🎨 Appearance</div>
+          <div class="settings-nav-item" onclick="settingsNav('system',this)">🖥️ System</div>
+          <div class="settings-nav-item" onclick="settingsNav('about',this)">ℹ️ About</div>
+        </div>
+        <div class="settings-main" id="settings-content"></div>
+      </div>`;
+    renderSettingsPanel('ai');
+  });
+}
+function settingsNav(panel,el){
+  document.querySelectorAll('.settings-nav-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');renderSettingsPanel(panel);
+}
+function renderSettingsPanel(panel){
+  const c=document.getElementById('settings-content');if(!c)return;
+  if(panel==='ai'){
+    const key=LS.get('groq_api_key','');
+    c.innerHTML=`
+      <div class="settings-section">
+        <h3>🤖 AI Assistant — Groq API</h3>
+        <div class="settings-row">
+          <div class="settings-row-info"><h4>Groq API Key</h4><p>Get a free key at console.groq.com</p></div>
+        </div>
+        <input class="groq-input" type="password" id="groq-key-input" value="${key}" placeholder="gsk_...">
+        <button class="groq-save" onclick="saveGroqKey()">💾 Save Key</button>
+        <div style="margin-top:20px;">
+          <div class="settings-row">
+            <div class="settings-row-info"><h4>Chat History</h4><p>Stored locally in browser</p></div>
+            <button class="editor-btn" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer" onclick="clearAIHistory()">Clear</button>
+          </div>
+        </div>
+      </div>`;
+  }else if(panel==='appearance'){
+    c.innerHTML=`<div class="settings-section"><h3>🎨 Appearance</h3><p style="color:#888;font-size:13px">Theme customization coming soon.</p></div>`;
+  }else if(panel==='system'){
+    const fs=getFS();const count=Object.keys(fs).length;
+    c.innerHTML=`<div class="settings-section"><h3>🖥️ System</h3>
+      <div class="settings-row"><div class="settings-row-info"><h4>File System</h4><p>${count} root folders</p></div>
+        <button class="editor-btn" style="background:#e94560;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer" onclick="if(confirm('Reset file system? All files will be lost!'))resetFS()">Reset</button>
+      </div>
+      <div class="settings-row"><div class="settings-row-info"><h4>CloudeOS Version</h4><p>1.0.0 build 2026</p></div></div>
+    </div>`;
+  }else{
+    c.innerHTML=`<div class="settings-section"><h3>ℹ️ About CloudeOS</h3>
+      <p style="font-size:13px;color:#555;line-height:1.8">CloudeOS is a browser-based desktop OS experience.<br><br>
+      <strong>Version:</strong> 1.0.0<br><strong>Built with:</strong> HTML, CSS, Vanilla JS<br><strong>AI:</strong> Groq API (llama-3.3-70b)<br><strong>Storage:</strong> localStorage<br><br>
+      Open Terminal or Browser from the desktop for more apps.</p></div>`;
+  }
+}
+function saveGroqKey(){
+  const k=document.getElementById('groq-key-input')?.value?.trim();
+  if(k){LS.set('groq_api_key',k);alert('API key saved! ✓');}
+}
+function clearAIHistory(){aiHistory=[];LS.set('ai_history',[]);alert('Chat history cleared.');}
+function resetFS(){LS.set('fs',null);alert('File system reset.');renderExplorerContent();}
+
+// ===== TERMINAL LAUNCHER =====
+function openTerminal(){
+  window.open('terminal.html','_blank','width=800,height=500,menubar=no,toolbar=no,location=no');
+}
+function openBrowser(){
+  window.open('browser.html','_blank','width=1000,height=700,menubar=no,toolbar=no,location=no');
+}
+
+// ===== APPS DEFINITION =====
+const apps=[
+  {id:'explorer',name:'Files',icon:'📁',color:'#f6c90e',open:openExplorer},
+  {id:'editor',name:'Text Editor',icon:'📝',color:'#4285f4',open:()=>openTextEditor()},
+  {id:'ai',name:'AI Assistant',icon:'🤖',color:'#e94560',open:openAIAssistant},
+  {id:'pdf',name:'PDF Viewer',icon:'📕',color:'#e91e63',open:openPDFViewer},
+  {id:'settings',name:'Settings',icon:'⚙️',color:'#5f6368',open:openSettings},
+  {id:'terminal',name:'Terminal',icon:'💻',color:'#0f3460',open:openTerminal},
+  {id:'browser',name:'Browser',icon:'🌐',color:'#34a853',open:openBrowser},
+];
+
+// ===== DESKTOP ICONS =====
+const iconPositions=[
+  {x:20,y:20},{x:20,y:120},{x:20,y:220},{x:20,y:320},{x:20,y:420},
+  {x:110,y:20},{x:110,y:120},{x:110,y:220},
+];
+function buildDesktop(){
+  const desktop=document.getElementById('desktop');
+  apps.forEach((app,i)=>{
+    const pos=iconPositions[i]||{x:20+i*90,y:20};
+    const el=document.createElement('div');
+    el.className='desktop-icon';
+    el.style.left=pos.x+'px';el.style.top=pos.y+'px';
+    el.innerHTML=`<div class="icon-img" style="background:${app.color}">${app.icon}</div><span>${app.name}</span>`;
+    el.ondblclick=()=>app.open();
+    el.oncontextmenu=e=>{e.preventDefault();showDesktopCtx(e);};
+    desktop.appendChild(el);
+  });
+}
+function buildStartMenu(){
+  const grid=document.getElementById('start-app-grid');
+  apps.forEach(app=>{
+    const el=document.createElement('div');el.className='start-app-item';
+    el.innerHTML=`<div class="icon-img" style="background:${app.color}">${app.icon}</div><span>${app.name}</span>`;
+    el.onclick=()=>{app.open();closeStart();};
+    grid.appendChild(el);
+  });
+}
+function buildAllAppsGrid(){
+  const grid=document.getElementById('all-apps-grid');
+  apps.forEach(app=>{
+    const el=document.createElement('div');el.className='app-item';
+    el.innerHTML=`<div class="icon-img" style="background:${app.color};width:52px;height:52px;border-radius:14px;font-size:28px;display:flex;align-items:center;justify-content:center;">${app.icon}</div><span>${app.name}</span>`;
+    el.onclick=()=>{app.open();closeAppsPanel();};
+    grid.appendChild(el);
+  });
+}
+
+// ===== MENUS =====
+function toggleStart(){
+  const m=document.getElementById('start-menu');m.classList.toggle('open');
+  closeAppsPanel();
+}
+function closeStart(){document.getElementById('start-menu').classList.remove('open');}
+function toggleAppsPanel(){
+  const p=document.getElementById('apps-panel');p.classList.toggle('open');
+  closeStart();
+}
+function closeAppsPanel(){document.getElementById('apps-panel').classList.remove('open');}
+
+// ===== CONTEXT MENU =====
+function showDesktopCtx(e){
+  const m=document.getElementById('ctx-menu');
+  m.innerHTML=`
+    <div class="ctx-item" onclick="openExplorer()">📁 Open File Explorer</div>
+    <div class="ctx-item" onclick="openTextEditor()">📝 New Text File</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="openAIAssistant()">🤖 AI Assistant</div>
+    <div class="ctx-item" onclick="openSettings()">⚙️ Settings</div>`;
+  m.style.display='block';m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';
+}
+function ctxNewFile(){openTextEditor();hideCtx();}
+function ctxNewFolder(){explorerNewFolder();hideCtx();}
+function ctxRefresh(){hideCtx();}
+function hideCtx(){document.getElementById('ctx-menu').style.display='none';}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#ctx-menu'))hideCtx();
+  if(!e.target.closest('#start-menu')&&!e.target.closest('#taskbar-start'))closeStart();
+  if(!e.target.closest('#apps-panel')&&!e.target.closest('#apps-taskbar-btn'))closeAppsPanel();
+});
+document.addEventListener('contextmenu',e=>{
+  if(e.target.closest('.file-item'))return;
+  if(!e.target.closest('.window')&&!e.target.closest('#taskbar')){
+    e.preventDefault();showDesktopCtx(e);
+  }
+});
+
+// INIT
+buildDesktop();buildStartMenu();buildAllAppsGrid();
+</script>
+</body>
+</html>

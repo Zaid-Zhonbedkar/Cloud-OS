@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seaphire Browser - Web OS Edition</title>
+    <!-- Tailwind CSS for high-quality responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for clean navigation buttons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Customize scrollbars for premium look and feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Tab transition effect */
+        .tab-transition {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Simulation loader pulse animation */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        .loader-glow {
+            animation: pulse-glow 1.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- Main Browser Container -->
+    <div id="browser-root" class="flex flex-col flex-1 h-screen w-full bg-slate-100 dark:bg-slate-950 transition-colors duration-300">
+        
+        <!-- TOP CHROME: WINDOW CONTROLS & TABS BAR -->
+        <div class="flex items-end justify-between px-3 pt-2 bg-slate-200 dark:bg-slate-900 border-b border-slate-300/80 dark:border-slate-800/80 drag-handle">
+            
+            <div class="flex items-end space-x-2 overflow-x-auto scrollbar-none max-w-[80%]">
+                <!-- macOS Style Window Dots for system immersion -->
+                <div class="flex items-center space-x-1.5 px-2 pb-2.5 mr-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 cursor-pointer block transition-colors" onclick="triggerAlert('Seaphire OS Integration', 'Browser application received exit signal.')"></span>
+                    <span class="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-600 cursor-pointer block transition-colors"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500 hover:bg-green-600 cursor-pointer block transition-colors"></span>
+                </div>
+
+                <!-- Tabs Container -->
+                <div id="tabs-container" class="flex items-end space-x-1">
+                    <!-- Tabs inject dynamically here -->
+                </div>
+
+                <!-- New Tab Button -->
+                <button id="btn-new-tab" class="p-1.5 mb-1.5 rounded-md hover:bg-slate-300 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors" title="Open New Tab (Ctrl+T)">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Dark/Light Theme and Engine Status -->
+            <div class="flex items-center space-x-3 pb-2 text-xs text-slate-500 dark:text-slate-400">
+                <div class="hidden sm:flex items-center bg-slate-300/50 dark:bg-slate-800/50 px-2 py-1 rounded-md">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 loader-glow"></span>
+                    <span class="font-semibold text-[10px] tracking-wider uppercase">Seaphire Real-Net Core v3.0</span>
+                </div>
+                <button id="btn-toggle-dark" class="p-1.5 rounded-md hover:bg-slate-300 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors" title="Toggle System Appearance">
+                    <i data-lucide="sun" id="dark-mode-icon" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- NAVIGATION & CONTROLS BAR (Chrome / Firefox style layout) -->
+        <div class="flex items-center space-x-2 p-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-850 shadow-sm">
+            
+            <!-- Navigation Actions -->
+            <div class="flex items-center space-x-1">
+                <button id="btn-back" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent text-slate-700 dark:text-slate-300 transition-colors" title="Back">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-forward" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent text-slate-700 dark:text-slate-300 transition-colors" title="Forward">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-reload" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors" title="Reload Tab">
+                    <i data-lucide="rotate-cw" id="reload-icon" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-home" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors" title="Home Page">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Intelligent Address Omnibox System -->
+            <div class="relative flex-1 flex items-center group">
+                <!-- Protocol/Shield Indicator -->
+                <div class="absolute left-3 flex items-center text-emerald-600 dark:text-emerald-400 cursor-pointer" id="security-badge" title="Secure Seaphire Connection">
+                    <i data-lucide="shield-check" class="w-4 h-4 mr-1"></i>
+                    <span class="text-[10px] font-bold tracking-tight hidden md:inline">SECURE</span>
+                </div>
+
+                <!-- Omnibox Input -->
+                <input type="text" id="omnibox" 
+                       class="w-full bg-slate-200/70 hover:bg-slate-200 focus:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 dark:focus:bg-slate-950 text-slate-800 dark:text-slate-100 pl-20 pr-12 py-1.5 rounded-full border border-slate-300/50 focus:border-blue-500 dark:border-slate-700/50 dark:focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm transition-all shadow-inner"
+                       placeholder="Search the real internet or type an address (e.g., https://wikipedia.org)" />
+
+                <!-- Star/Bookmark Button inside omnibox -->
+                <button id="btn-bookmark" class="absolute right-3 p-1 rounded-full text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Bookmark this page">
+                    <i data-lucide="star" id="bookmark-icon" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Utility Sidebar Buttons -->
+            <div class="flex items-center space-x-1">
+                <button id="btn-sidebar-bookmarks" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors" title="Bookmarks & History">
+                    <i data-lucide="library" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-devtools" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors" title="Developer Tools Console">
+                    <i data-lucide="terminal" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-menu" class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors" title="Seaphire Options Menu">
+                    <i data-lucide="menu" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- QUICK BOOKMARKS BAR -->
+        <div id="bookmarks-bar" class="flex items-center space-x-2 px-4 py-1 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-xs overflow-x-auto scrollbar-none">
+            <span class="text-slate-400 flex items-center pr-1 border-r border-slate-300 dark:border-slate-800 mr-1">
+                <i data-lucide="star" class="w-3.5 h-3.5 mr-1"></i>
+                Bookmarks:
+            </span>
+            <div id="quick-bookmarks-container" class="flex items-center space-x-1.5">
+                <!-- Bookmarked links inject dynamically -->
+            </div>
+        </div>
+
+        <!-- REAL-TIME LOADING PROGRESS BAR -->
+        <div class="w-full h-[2px] bg-slate-200 dark:bg-slate-800 relative overflow-hidden">
+            <div id="progress-indicator" class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 w-0 transition-all duration-300 ease-out"></div>
+        </div>
+
+        <!-- MAIN VIEWPORT AND SIDEBAR LAYOUT -->
+        <div class="flex-1 flex overflow-hidden relative">
+            
+            <!-- BOOKMARKS & HISTORY SIDEBAR -->
+            <aside id="library-sidebar" class="w-64 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-850 flex flex-col h-full transform transition-transform duration-300 -translate-x-full absolute z-40 md:relative md:translate-x-0 hidden">
+                <div class="p-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300 flex items-center">
+                        <i data-lucide="library" class="w-4 h-4 mr-2 text-indigo-500"></i>
+                        Browser Library
+                    </h3>
+                    <button id="btn-close-sidebar" class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                
+                <div class="flex border-b border-slate-200 dark:border-slate-800 text-xs text-center font-semibold">
+                    <button id="sidebar-tab-bookmarks" class="flex-1 py-2 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 bg-slate-100/50 dark:bg-slate-800/30">Bookmarks</button>
+                    <button id="sidebar-tab-history" class="flex-1 py-2 text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800">History</button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-2" id="sidebar-content">
+                    <!-- Dynamic bookmarks or history content -->
+                </div>
+            </aside>
+
+            <!-- OPTIONS MENU POPUP -->
+            <div id="options-menu" class="absolute right-2 top-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-xl z-50 p-3 hidden transition-all">
+                <h4 class="font-bold text-xs text-slate-400 uppercase tracking-wider mb-2 px-1">Seaphire Options</h4>
+                <div class="space-y-1">
+                    <button id="menu-new-tab" class="w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors">
+                        <span class="flex items-center"><i data-lucide="plus" class="w-4 h-4 mr-2.5 text-blue-500"></i> New Tab</span>
+                        <kbd class="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500 font-mono">Ctrl+T</kbd>
+                    </button>
+                    <button id="menu-bookmarks" class="w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors">
+                        <span class="flex items-center"><i data-lucide="star" class="w-4 h-4 mr-2.5 text-amber-500"></i> View Bookmarks</span>
+                        <kbd class="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500 font-mono">Ctrl+B</kbd>
+                    </button>
+                    <button id="menu-clear-all" class="w-full flex items-center justify-between px-2.5 py-2 text-sm rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 transition-colors">
+                        <span class="flex items-center"><i data-lucide="trash-2" class="w-4 h-4 mr-2.5 text-red-500"></i> Clear History/Cache</span>
+                    </button>
+                    <hr class="border-slate-200 dark:border-slate-800 my-2" />
+                    <div class="p-1 text-xs space-y-2">
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase">Search Engine Core</label>
+                        <select id="engine-select" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1.5 rounded-md text-slate-700 dark:text-slate-300 focus:outline-none">
+                            <option value="wikipedia">Wikipedia & OpenSearch API</option>
+                            <option value="duckduckgo">DuckDuckGo Instant Answers</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INTERACTIVE BROWSER VIEWPORT FRAME CONTAINER -->
+            <div class="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-slate-900" id="viewport-container">
+                
+                <!-- IFRAME MODE VIEWPORT (For direct standard pages) -->
+                <iframe id="iframe-viewport" 
+                        class="w-full h-full border-none hidden bg-white" 
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
+                </iframe>
+
+                <!-- SEAPHIRE VIRTUAL RENDERING CORE (For CORS web browsing experience & Dynamic API Search Results) -->
+                <div id="virtual-viewport" class="w-full h-full flex flex-col overflow-y-auto">
+                    <!-- Loaded dynamically via JavaScript renderer -->
+                </div>
+
+                <!-- FLOATING SYSTEM NOTIFICATION BANNER -->
+                <div id="alert-banner" class="absolute bottom-4 right-4 max-w-sm w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-xl p-4 hidden z-50 transform translate-y-10 opacity-0 transition-all duration-300">
+                    <div class="flex items-start space-x-3">
+                        <div class="bg-indigo-100 dark:bg-indigo-950 p-2 rounded-lg text-indigo-500" id="alert-icon-wrapper">
+                            <i data-lucide="info" id="alert-icon" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h5 class="font-bold text-sm text-slate-800 dark:text-slate-100" id="alert-title">Seaphire OS System Alert</h5>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="alert-message">Notice content.</p>
+                        </div>
+                        <button id="btn-close-alert" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INTEGRATED DEVELOPMENT TOOLS & SHELL CONSOLE -->
+            <aside id="devtools-sidebar" class="w-96 bg-slate-950 border-l border-slate-800 flex flex-col h-full transform transition-transform duration-300 translate-x-full absolute right-0 z-40 md:relative hidden">
+                <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                    <h3 class="font-bold text-xs text-emerald-400 uppercase tracking-widest flex items-center code-font">
+                        <i data-lucide="terminal" class="w-4 h-4 mr-2"></i>
+                        Seaphire Developer Tools
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-clear-console" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200" title="Clear Console Logs">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button id="btn-close-devtools" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Console tabs -->
+                <div class="flex bg-slate-900 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400 code-font">
+                    <button class="flex-1 py-1.5 text-emerald-400 border-b border-emerald-500">Console Shell</button>
+                    <button class="flex-1 py-1.5 border-b border-transparent opacity-50">Elements</button>
+                    <button class="flex-1 py-1.5 border-b border-transparent opacity-50">Network Status</button>
+                </div>
+                <!-- Console outputs -->
+                <div id="console-logs" class="flex-1 overflow-y-auto p-3 space-y-1.5 text-xs text-emerald-500 code-font bg-slate-950">
+                    <!-- Logs populated here -->
+                </div>
+                <!-- Developer CLI input -->
+                <div class="p-2 border-t border-slate-800 bg-slate-900 flex items-center space-x-1.5">
+                    <span class="text-emerald-500 text-xs font-bold code-font">&gt;</span>
+                    <input type="text" id="console-input" class="flex-1 bg-transparent text-emerald-400 text-xs border-none outline-none focus:ring-0 code-font" placeholder="Run JS or enter help..." />
+                </div>
+            </aside>
+        </div>
+
+        <!-- BROWSER STATUS FOOTER -->
+        <footer class="bg-slate-200 dark:bg-slate-900 border-t border-slate-300 dark:border-slate-800 py-1 px-4 text-xs flex justify-between items-center text-slate-500 dark:text-slate-400">
+            <div class="flex items-center space-x-4">
+                <span id="footer-status-text" class="flex items-center">
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5 mr-1.5 text-emerald-500"></i>
+                    Seaphire Web-OS Sandboxed & Active
+                </span>
+                <span class="hidden sm:inline">|</span>
+                <span id="footer-ssl-info" class="hidden sm:inline">Active Real-Time Web Scraper Integration</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="font-mono text-[10px] bg-slate-300 dark:bg-slate-800 px-1.5 py-0.5 rounded">CPU: 0.2%</span>
+                <span class="font-mono text-[10px] bg-slate-300 dark:bg-slate-800 px-1.5 py-0.5 rounded">Mem: 24MB</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- MAIN SYSTEM CORE SCRIPT -->
+    <script>
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'seaphire-browser';
+
+        // Browser Application State structure
+        let state = {
+            tabs: [
+                {
+                    id: 'tab-1',
+                    title: 'Seaphire Start',
+                    url: 'seaphire://start',
+                    loading: false,
+                    history: ['seaphire://start'],
+                    historyIndex: 0
+                }
+            ],
+            activeTabId: 'tab-1',
+            bookmarks: [
+                { title: 'Seaphire Hub', url: 'seaphire://start', isCore: true },
+                { title: 'Live HTML Sandbox', url: 'seaphire://code', isCore: true },
+                { title: 'Retro Mini Arcade', url: 'seaphire://arcade', isCore: true },
+                { title: 'Digital Paint Canvas', url: 'seaphire://paint', isCore: true },
+                { title: 'Wikipedia Main Page', url: 'https://en.wikipedia.org/wiki/Main_Page' },
+                { title: 'DuckDuckGo Main', url: 'https://duckduckgo.com' }
+            ],
+            history: [],
+            sidebarOpen: false,
+            devtoolsOpen: false,
+            sidebarTab: 'bookmarks', // 'bookmarks' | 'history'
+            selectedEngine: 'wikipedia'
+        };
+
+        // INITIALIZATION
+        document.addEventListener('DOMContentLoaded', () => {
+            // Restore saved browser profiles
+            const savedBookmarks = localStorage.getItem('seaphire_bookmarks_v2');
+            if (savedBookmarks) {
+                state.bookmarks = JSON.parse(savedBookmarks);
+            }
+            const savedHistory = localStorage.getItem('seaphire_history_v2');
+            if (savedHistory) {
+                state.history = JSON.parse(savedHistory);
+            }
+            const savedEngine = localStorage.getItem('seaphire_search_engine_v2');
+            if (savedEngine) {
+                state.selectedEngine = savedEngine;
+                document.getElementById('engine-select').value = savedEngine;
+            }
+
+            // Start up icons and handlers
+            lucide.createIcons();
+            initEventListeners();
+
+            logToConsole('Seaphire Web OS Browser Framework successfully booted.', 'info');
+            logToConsole('Search module online. Direct CORS Wikipedia & DuckDuckGo API interface active.', 'system');
+
+            renderTabs();
+            renderBookmarksBar();
+            loadTabContent(state.activeTabId);
+        });
+
+        // SYSTEM CONSOLE LOGGING
+        function logToConsole(message, type = 'log') {
+            const container = document.getElementById('console-logs');
+            if (!container) return;
+
+            const entry = document.createElement('div');
+            entry.className = 'py-0.5 border-b border-slate-900/50 flex items-start space-x-1.5';
+            
+            let color = 'text-slate-300';
+            let prefix = '[LOG]';
+            
+            if (type === 'error') {
+                color = 'text-red-400';
+                prefix = '[ERR]';
+            } else if (type === 'info') {
+                color = 'text-sky-400';
+                prefix = '[INF]';
+            } else if (type === 'system') {
+                color = 'text-emerald-400';
+                prefix = '[SYS]';
+            }
+
+            entry.innerHTML = `
+                <span class="${color} font-bold select-none text-[10px]">${prefix}</span>
+                <span class="${color} flex-1 break-all">${message}</span>
+                <span class="text-slate-600 text-[9px] font-mono select-none">${new Date().toLocaleTimeString()}</span>
+            `;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // CUSTOM TOAST ALERTS
+        function triggerAlert(title, message, icon = 'info', color = 'indigo') {
+            const banner = document.getElementById('alert-banner');
+            const alertTitle = document.getElementById('alert-title');
+            const alertMsg = document.getElementById('alert-message');
+            const iconWrapper = document.getElementById('alert-icon-wrapper');
+            
+            alertTitle.textContent = title;
+            alertMsg.textContent = message;
+            
+            iconWrapper.className = `p-2 rounded-lg text-${color}-500 bg-${color}-100 dark:bg-${color}-950`;
+            
+            banner.classList.remove('hidden');
+            setTimeout(() => {
+                banner.classList.remove('translate-y-10', 'opacity-0');
+            }, 10);
+
+            // Automatically hide after 5 seconds
+            setTimeout(closeAlert, 5000);
+        }
+
+        function closeAlert() {
+            const banner = document.getElementById('alert-banner');
+            if (!banner.classList.contains('hidden')) {
+                banner.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    banner.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // TAB RENDERER
+        function renderTabs() {
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+
+            state.tabs.forEach((tab) => {
+                const isActive = tab.id === state.activeTabId;
+                const tabElement = document.createElement('div');
+                
+                tabElement.className = `
+                    group relative flex items-center h-10 px-4 mr-1 rounded-t-xl text-xs font-medium cursor-pointer tab-transition
+                    ${isActive 
+                        ? 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-t border-x border-slate-300 dark:border-slate-800 z-10' 
+                        : 'bg-slate-300/40 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:bg-slate-300/75 dark:hover:bg-slate-800/75 hover:text-slate-700 dark:hover:text-slate-200'}
+                `;
+                tabElement.style.width = '160px';
+                tabElement.setAttribute('data-tab-id', tab.id);
+
+                let faviconHtml = `<i data-lucide="globe" class="w-3.5 h-3.5 mr-2 text-blue-500 flex-shrink-0"></i>`;
+                if (tab.url.startsWith('seaphire://')) {
+                    if (tab.url.includes('arcade')) {
+                        faviconHtml = `<i data-lucide="gamepad-2" class="w-3.5 h-3.5 mr-2 text-red-500 flex-shrink-0"></i>`;
+                    } else if (tab.url.includes('paint')) {
+                        faviconHtml = `<i data-lucide="palette" class="w-3.5 h-3.5 mr-2 text-yellow-500 flex-shrink-0"></i>`;
+                    } else if (tab.url.includes('code')) {
+                        faviconHtml = `<i data-lucide="code" class="w-3.5 h-3.5 mr-2 text-emerald-500 flex-shrink-0"></i>`;
+                    } else {
+                        faviconHtml = `<i data-lucide="shield" class="w-3.5 h-3.5 mr-2 text-indigo-500 flex-shrink-0"></i>`;
+                    }
+                }
+
+                tabElement.innerHTML = `
+                    <div class="flex items-center flex-grow overflow-hidden pr-2" onclick="setActiveTab('${tab.id}')">
+                        ${faviconHtml}
+                        <span class="truncate pr-1">${tab.title}</span>
+                    </div>
+                    ${state.tabs.length > 1 ? `
+                    <button class="opacity-0 group-hover:opacity-100 p-0.5 rounded-full hover:bg-slate-400/20 dark:hover:bg-slate-700/50 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all absolute right-2" 
+                            onclick="event.stopPropagation(); closeTab('${tab.id}')">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                    ` : ''}
+                `;
+
+                container.appendChild(tabElement);
+            });
+            
+            lucide.createIcons();
+            updateNavigationButtons();
+        }
+
+        // TAB NAVIGATION STATE MANAGEMENT
+        function setActiveTab(id) {
+            state.activeTabId = id;
+            renderTabs();
+            loadTabContent(id);
+        }
+
+        function createNewTab(targetUrl = 'seaphire://start') {
+            const newId = `tab-${Date.now()}`;
+            const newTab = {
+                id: newId,
+                title: 'New Tab',
+                url: targetUrl,
+                loading: false,
+                history: [targetUrl],
+                historyIndex: 0
+            };
+            state.tabs.push(newTab);
+            setActiveTab(newId);
+            logToConsole(`New sandbox tab initialized: ${newId}`, 'info');
+        }
+
+        function closeTab(id) {
+            if (state.tabs.length <= 1) return;
+
+            const deadTabIndex = state.tabs.findIndex(t => t.id === id);
+            state.tabs = state.tabs.filter(t => t.id !== id);
+
+            if (state.activeTabId === id) {
+                const nextTab = state.tabs[deadTabIndex] || state.tabs[deadTabIndex - 1];
+                state.activeTabId = nextTab.id;
+            }
+
+            renderTabs();
+            loadTabContent(state.activeTabId);
+        }
+
+        function renderBookmarksBar() {
+            const container = document.getElementById('quick-bookmarks-container');
+            container.innerHTML = '';
+
+            state.bookmarks.slice(0, 8).forEach(bookmark => {
+                const btn = document.createElement('button');
+                btn.className = "flex items-center px-2 py-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors";
+                
+                let iconType = 'globe';
+                let iconColor = 'text-blue-500';
+                
+                if (bookmark.url.includes('arcade')) { iconType = 'gamepad-2'; iconColor = 'text-red-500'; }
+                else if (bookmark.url.includes('paint')) { iconType = 'palette'; iconColor = 'text-yellow-500'; }
+                else if (bookmark.url.includes('code')) { iconType = 'code'; iconColor = 'text-emerald-500'; }
+                else if (bookmark.url.startsWith('seaphire://')) { iconType = 'shield'; iconColor = 'text-indigo-500'; }
+
+                btn.innerHTML = `
+                    <i data-lucide="${iconType}" class="w-3 h-3 mr-1.5 ${iconColor}"></i>
+                    <span>${bookmark.title}</span>
+                `;
+                btn.addEventListener('click', () => {
+                    navigateActiveTabTo(bookmark.url);
+                });
+                container.appendChild(btn);
+            });
+            lucide.createIcons();
+            renderSidebar();
+        }
+
+        function renderSidebar() {
+            const content = document.getElementById('sidebar-content');
+            if (!content) return;
+            content.innerHTML = '';
+
+            if (state.sidebarTab === 'bookmarks') {
+                if (state.bookmarks.length === 0) {
+                    content.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Empty Bookmarks list.</div>`;
+                    return;
+                }
+                
+                state.bookmarks.forEach((bm, idx) => {
+                    const item = document.createElement('div');
+                    item.className = "flex items-center justify-between p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-xs transition-colors group";
+                    item.innerHTML = `
+                        <div class="flex items-center flex-1 cursor-pointer truncate mr-2" onclick="navigateActiveTabTo('${bm.url}')">
+                            <i data-lucide="bookmark" class="w-3.5 h-3.5 mr-2 text-indigo-500 flex-shrink-0"></i>
+                            <div class="truncate">
+                                <p class="font-semibold text-slate-700 dark:text-slate-200 truncate">${bm.title}</p>
+                                <p class="text-[10px] text-slate-400 truncate">${bm.url}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteBookmark(${idx})" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 p-1">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                        </button>
+                    `;
+                    content.appendChild(item);
+                });
+            } else {
+                if (state.history.length === 0) {
+                    content.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Browsing history is empty.</div>`;
+                    return;
+                }
+
+                state.history.forEach((hs) => {
+                    const item = document.createElement('div');
+                    item.className = "flex items-center justify-between p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-xs transition-colors group";
+                    item.innerHTML = `
+                        <div class="flex items-center flex-1 cursor-pointer truncate mr-2" onclick="navigateActiveTabTo('${hs.url}')">
+                            <i data-lucide="clock" class="w-3.5 h-3.5 mr-2 text-slate-400 flex-shrink-0"></i>
+                            <div class="truncate">
+                                <p class="font-semibold text-slate-700 dark:text-slate-200 truncate">${hs.title}</p>
+                                <p class="text-[10px] text-slate-400 truncate">${hs.url}</p>
+                            </div>
+                        </div>
+                        <span class="text-[9px] text-slate-400">${new Date(hs.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    `;
+                    content.appendChild(item);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function deleteBookmark(index) {
+            state.bookmarks.splice(index, 1);
+            localStorage.setItem('seaphire_bookmarks_v2', JSON.stringify(state.bookmarks));
+            renderBookmarksBar();
+            triggerAlert('Bookmark Removed', 'The bookmark was deleted.', 'trash-2', 'amber');
+        }
+
+        // INTELLIGENT ROUTER & OMNIBOX PARSER
+        function navigateActiveTabTo(targetInput) {
+            let input = targetInput.trim();
+            if (!input) return;
+
+            const isSeaphireProtocol = input.startsWith('seaphire://');
+            const isUrl = /^(https?:\/\/)?([\w\d-]+\.)+[\w-]+(\/.*)?$/.test(input) || input.startsWith('localhost') || input.startsWith('127.0.0.1');
+
+            let finalUrl = input;
+            if (isSeaphireProtocol) {
+                finalUrl = input;
+            } else if (isUrl) {
+                if (!input.startsWith('http://') && !input.startsWith('https://')) {
+                    finalUrl = 'https://' + input;
+                }
+            } else {
+                // If it's search text, route to search rendering protocol
+                finalUrl = `seaphire://search?q=${encodeURIComponent(input)}`;
+            }
+
+            const tab = state.tabs.find(t => t.id === state.activeTabId);
+            if (tab) {
+                if (tab.historyIndex < tab.history.length - 1) {
+                    tab.history = tab.history.slice(0, tab.historyIndex + 1);
+                }
+                tab.history.push(finalUrl);
+                tab.historyIndex = tab.history.length - 1;
+                tab.url = finalUrl;
+                
+                loadTabContent(tab.id);
+            }
+        }
+
+        function updateNavigationButtons() {
+            const tab = state.tabs.find(t => t.id === state.activeTabId);
+            if (!tab) return;
+
+            document.getElementById('btn-back').disabled = tab.historyIndex <= 0;
+            document.getElementById('btn-forward').disabled = tab.historyIndex >= tab.history.length - 1;
+
+            const bookmarkIcon = document.getElementById('bookmark-icon');
+            const isBookmarked = state.bookmarks.some(bm => bm.url === tab.url);
+            if (isBookmarked) {
+                bookmarkIcon.classList.add('text-amber-500', 'fill-current');
+            } else {
+                bookmarkIcon.classList.remove('text-amber-500', 'fill-current');
+            }
+        }
+
+        // TAB LOADING DISPATCHER
+        function loadTabContent(tabId) {
+            const tab = state.tabs.find(t => t.id === tabId);
+            if (!tab) return;
+
+            document.getElementById('omnibox').value = tab.url;
+
+            const prog = document.getElementById('progress-indicator');
+            prog.style.width = '30%';
+            
+            const iframe = document.getElementById('iframe-viewport');
+            const virtual = document.getElementById('virtual-viewport');
+            
+            logToConsole(`Navigating tab to target: ${tab.url}`, 'info');
+
+            // Save history log
+            const histItem = { title: tab.title, url: tab.url, time: Date.now() };
+            state.history.unshift(histItem);
+            localStorage.setItem('seaphire_history_v2', JSON.stringify(state.history));
+            renderSidebar();
+
+            // Check if standard website can be processed via CORS reader proxy OR loaded normally
+            if (tab.url.startsWith('https://') && !tab.url.startsWith('seaphire://')) {
+                // To keep the experience functional and completely interactive without CORS blocks, 
+                // we load real websites using our simulated visual proxy parser!
+                iframe.classList.add('hidden');
+                virtual.classList.remove('hidden');
+                renderVirtualWebsiteProxy(tab, prog);
+            } else {
+                // Special WebOS Seaphire Internal Apps & Search Engine View
+                iframe.classList.add('hidden');
+                virtual.classList.remove('hidden');
+                renderVirtualEnvironment(tab, prog);
+            }
+        }
+
+        // HIGH-FIDELITY WEB SCRAPER / WEBSITE CORS PROXY SIMULATOR
+        // This function uses AllOrigins or Wikipedia direct extracts API to let users read and click through REAL websites
+        async function renderVirtualWebsiteProxy(tab, prog) {
+            const container = document.getElementById('virtual-viewport');
+            container.innerHTML = `
+                <div class="p-12 flex flex-col items-center justify-center h-full text-center">
+                    <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-4">Connecting to Seaphire OS Network Proxy...</p>
+                    <p class="text-[10px] text-slate-400 mt-1">Retrieving: ${tab.url}</p>
+                </div>
+            `;
+
+            try {
+                // If it is Wikipedia, let's load actual high fidelity Article content directly!
+                if (tab.url.includes('wikipedia.org')) {
+                    // Extract article name
+                    const match = tab.url.match(/\/wiki\/(.+)$/);
+                    const title = match ? decodeURIComponent(match[1]) : 'Operating_system';
+                    
+                    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`);
+                    if (!res.ok) throw new Error("Could not retrieve Wikipedia page data.");
+                    
+                    const data = await res.json();
+                    tab.title = data.title;
+                    
+                    container.innerHTML = `
+                        <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full">
+                            <div class="max-w-3xl mx-auto px-6 py-8">
+                                <div class="border-b border-slate-200 dark:border-slate-800 pb-4 mb-6">
+                                    <span class="text-xs font-semibold text-blue-500 uppercase tracking-widest">Wikipedia Reader Mode</span>
+                                    <h1 class="text-3xl font-extrabold mt-1">${data.title}</h1>
+                                    <p class="text-xs text-slate-400 mt-1">Grounded Reference URL: <a href="${tab.url}" target="_blank" class="underline text-blue-500 hover:text-blue-600">${tab.url}</a></p>
+                                </div>
+                                
+                                ${data.thumbnail ? `<div class="mb-6"><img src="${data.thumbnail.source}" class="max-h-64 object-cover rounded-lg shadow-sm" alt="Wiki Image"/></div>` : ''}
+                                
+                                <p class="text-sm leading-relaxed mb-6 font-serif">${data.extract}</p>
+                                
+                                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+                                    <h4 class="font-bold mb-2">Seaphire OS Integration Note:</h4>
+                                    <p>This article has been rendered in clean-reading sandboxed format to bypass Cross-Origin Frame blocking natively. Search for other terms in the omnibox to fetch real articles!</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    tab.title = data.title;
+                    renderTabs();
+                } else {
+                    // For general websites, retrieve clean readability layout using public RSS/CORS parse tools
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tab.url)}`;
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error("Proxy connection failed.");
+                    
+                    const json = await response.json();
+                    
+                    // Parse text snippets to generate a beautiful readable preview of the site
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(json.contents, 'text/html');
+                    const textContent = doc.body ? doc.body.innerText.slice(0, 1000) : "No textual metadata fetched.";
+                    const pageTitle = doc.title || tab.url;
+
+                    container.innerHTML = `
+                        <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full">
+                            <div class="max-w-3xl mx-auto px-6 py-8">
+                                <div class="border-b border-slate-200 dark:border-slate-800 pb-4 mb-6 flex justify-between items-start">
+                                    <div>
+                                        <span class="text-xs font-semibold text-emerald-500 uppercase tracking-widest">Safe Sandboxed Reader Mode</span>
+                                        <h1 class="text-2xl font-bold mt-1 text-slate-900 dark:text-white">${pageTitle}</h1>
+                                        <p class="text-xs text-slate-400 mt-1">${tab.url}</p>
+                                    </div>
+                                    <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold">Proxy Clean</span>
+                                </div>
+                                
+                                <div class="space-y-4">
+                                    <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">${textContent}...</p>
+                                    <p class="text-xs italic text-slate-400">Content parsed and purified dynamically via Seaphire OS Network Bridge.</p>
+                                </div>
+                                
+                                <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 flex space-x-2">
+                                    <button onclick="navigateActiveTabTo('seaphire://start')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-xs font-semibold">Go to Portal</button>
+                                    <a href="${tab.url}" target="_blank" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-4 py-2 rounded text-xs font-semibold">Open in Native Tab</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    tab.title = pageTitle;
+                    renderTabs();
+                }
+            } catch (err) {
+                logToConsole(`Reader proxy failed: ${err.message}`, 'error');
+                container.innerHTML = `
+                    <div class="p-12 text-center max-w-md mx-auto">
+                        <i data-lucide="cloud-off" class="w-12 h-12 text-red-500 mx-auto mb-4"></i>
+                        <h4 class="font-bold text-lg text-slate-800 dark:text-slate-200">Connection Interrupted</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                            The reader proxy could not fetch metadata from <span class="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">${tab.url}</span> due to CORS filters or target blocks.
+                        </p>
+                        <div class="mt-6 flex justify-center space-x-2">
+                            <button onclick="navigateActiveTabTo('seaphire://start')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg">Go to Home</button>
+                            <button onclick="navigateActiveTabTo('seaphire://search?q=${encodeURIComponent(tab.url)}')" class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs px-4 py-2 rounded-lg">Search Web</button>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+
+            prog.style.width = '100%';
+            setTimeout(() => { prog.style.width = '0%'; }, 500);
+        }
+
+        // SEAPHIRE VIRTUAL APPS & PLATFORM HANDLER
+        function renderVirtualEnvironment(tab, progressIndicator) {
+            const virtual = document.getElementById('virtual-viewport');
+            virtual.innerHTML = '';
+
+            const urlString = tab.url;
+            
+            if (urlString.startsWith('seaphire://start')) {
+                tab.title = "Seaphire Start";
+                renderHomePage(virtual);
+            } else if (urlString.startsWith('seaphire://search')) {
+                const params = new URLSearchParams(urlString.split('?')[1]);
+                const query = params.get('q') || '';
+                tab.title = `${query} - Search`;
+                renderSearchResultsPage(virtual, query);
+            } else if (urlString.startsWith('seaphire://code')) {
+                tab.title = "Live HTML Sandbox";
+                renderCodeSandbox(virtual);
+            } else if (urlString.startsWith('seaphire://arcade')) {
+                tab.title = "Retro Mini Arcade";
+                renderArcadeApp(virtual);
+            } else if (urlString.startsWith('seaphire://paint')) {
+                tab.title = "Digital Paint Canvas";
+                renderPaintApp(virtual);
+            } else {
+                tab.title = urlString;
+                renderFallbackPage(virtual, urlString);
+            }
+
+            renderTabs();
+            progressIndicator.style.width = '100%';
+            setTimeout(() => { progressIndicator.style.width = '0%'; }, 500);
+        }
+
+        // WEBPAGE: PORTAL HOME START PAGE
+        function renderHomePage(container) {
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto px-6 py-12 flex flex-col justify-center min-h-[80%]">
+                    
+                    <div class="text-center mb-10">
+                        <div class="inline-flex items-center justify-center p-4 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl shadow-xl shadow-blue-500/10 mb-4 transform hover:scale-105 transition-transform duration-300">
+                            <i data-lucide="shield" class="w-12 h-12 text-white"></i>
+                        </div>
+                        <h1 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                            Seaphire Web Browser
+                        </h1>
+                        <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm max-w-md mx-auto">
+                            The hyper-optimized, clean web-operating workspace for secure navigation.
+                        </p>
+                    </div>
+
+                    <!-- Core Omnibox Search Engine Interface -->
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl mb-8">
+                        <h3 class="font-semibold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Instant Network Search Engine</h3>
+                        <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1.5 border border-slate-200 dark:border-slate-700">
+                            <i data-lucide="search" class="w-5 h-5 text-slate-400 ml-3"></i>
+                            <input type="text" id="home-search-input" class="bg-transparent border-none text-slate-800 dark:text-white px-3 py-2 text-sm focus:outline-none flex-1" placeholder="Type what you want to learn, or type a URL..." />
+                            <button onclick="executeHomeSearch()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg transition-colors">Search Core</button>
+                        </div>
+                    </div>
+
+                    <!-- Speed Dial Shortcuts Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                        <div onclick="navigateActiveTabTo('seaphire://code')" class="cursor-pointer group flex flex-col items-center p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                            <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+                                <i data-lucide="code" class="w-5 h-5"></i>
+                            </div>
+                            <span class="text-xs font-semibold mt-2.5 text-slate-700 dark:text-slate-300">Live HTML Code</span>
+                        </div>
+                        <div onclick="navigateActiveTabTo('seaphire://arcade')" class="cursor-pointer group flex flex-col items-center p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                            <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
+                                <i data-lucide="gamepad-2" class="w-5 h-5"></i>
+                            </div>
+                            <span class="text-xs font-semibold mt-2.5 text-slate-700 dark:text-slate-300">Play Arcade</span>
+                        </div>
+                        <div onclick="navigateActiveTabTo('seaphire://paint')" class="cursor-pointer group flex flex-col items-center p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                            <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-950/40 flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform">
+                                <i data-lucide="palette" class="w-5 h-5"></i>
+                            </div>
+                            <span class="text-xs font-semibold mt-2.5 text-slate-700 dark:text-slate-300">Digital Paint</span>
+                        </div>
+                        <div onclick="toggleDevTools(true)" class="cursor-pointer group flex flex-col items-center p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                            <div class="w-10 h-10 rounded-full bg-sky-100 dark:bg-sky-950/40 flex items-center justify-center text-sky-500 group-hover:scale-110 transition-transform">
+                                <i data-lucide="terminal" class="w-5 h-5"></i>
+                            </div>
+                            <span class="text-xs font-semibold mt-2.5 text-slate-700 dark:text-slate-300">Developer Tools</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            
+            const searchBox = document.getElementById('home-search-input');
+            searchBox.focus();
+            searchBox.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    executeHomeSearch();
+                }
+            });
+        }
+
+        // REAL-TIME SEARCH ENGINE VIEWER WITH INTEGRATED FREE CORS WIKIPEDIA & DUCKDUCKGO APIs
+        async function renderSearchResultsPage(container, query) {
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto px-6 py-12 flex flex-col items-center justify-center h-full min-h-[300px]" id="search-loading-container">
+                    <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-4 animate-pulse">
+                        Retrieving real internet records for "${query}"...
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">Connecting directly via Web CORS API Bridge...</p>
+                </div>
+            `;
+
+            try {
+                // Fetch real search results from Wikipedia or DuckDuckGo API (Keyless!)
+                let results = [];
+                let summary = "";
+
+                if (state.selectedEngine === 'wikipedia') {
+                    // Fetch from real Wikipedia Search API
+                    const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`);
+                    if (searchRes.ok) {
+                        const searchJson = await searchRes.json();
+                        if (searchJson.query && searchJson.query.search) {
+                            results = searchJson.query.search.map(item => ({
+                                title: item.title,
+                                url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, '_'))}`,
+                                snippet: item.snippet.replace(/<\/?[^>]+(>|$)/g, "") // Clean HTML tags
+                            }));
+                        }
+                    }
+                    summary = results.length > 0 
+                        ? `Loaded ${results.length} real-time encyclopedic pages. Click on any entry to parse the article using Seaphire safe-reader proxy!`
+                        : `No encyclopedic results found. Try search terms like "Operating system", "Javascript", or "Apollo 11".`;
+                } else {
+                    // Fetch from real DuckDuckGo API
+                    const ddgRes = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&origin=*`);
+                    if (ddgRes.ok) {
+                        const ddgJson = await ddgRes.json();
+                        if (ddgJson.AbstractText) {
+                            summary = ddgJson.AbstractText;
+                        }
+                        if (ddgJson.RelatedTopics) {
+                            results = ddgJson.RelatedTopics.slice(0, 5).map(topic => ({
+                                title: topic.Text ? topic.Text.split('-')[0] : 'Search Resource',
+                                url: topic.FirstURL || `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
+                                snippet: topic.Text || 'Learn more on the referenced topic page.'
+                            })).filter(r => r.snippet);
+                        }
+                    }
+                    if (results.length === 0) {
+                        results = getFallbackMockResults(query).results;
+                        summary = `Viewing emulated proxy results for "${query}". Type complex URLs or specific search queries above.`;
+                    }
+                }
+
+                // Render beautiful results list
+                container.innerHTML = `
+                    <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-4 px-6 shadow-sm sticky top-0 z-10">
+                        <div class="max-w-4xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex items-center space-x-4">
+                                <h2 class="text-2xl font-black text-blue-600 dark:text-sky-400 font-sans cursor-pointer flex items-center" onclick="navigateActiveTabTo('seaphire://start')">
+                                    <i data-lucide="shield" class="w-6 h-6 mr-1.5"></i>
+                                    Seaphire
+                                </h2>
+                                <div class="flex-1 max-w-lg">
+                                    <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-1.5 border border-slate-200 dark:border-slate-700">
+                                        <input type="text" id="search-bar-input" class="bg-transparent border-none text-slate-800 dark:text-white text-xs outline-none w-full" value="${query}" />
+                                        <button onclick="executeSubSearch()"><i data-lucide="search" class="w-4 h-4 text-slate-400"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                Active Engine: <span class="capitalize text-indigo-500 font-bold">${state.selectedEngine}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="max-w-4xl mx-auto px-6 py-6 flex-1 bg-slate-50 dark:bg-slate-950">
+                        <!-- Summary Card -->
+                        <div class="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900/40 dark:to-indigo-950/20 p-5 rounded-2xl border border-blue-200/50 dark:border-blue-800/30">
+                            <div class="flex items-center space-x-2 text-blue-600 dark:text-sky-400 mb-2">
+                                <i data-lucide="sparkles" class="w-4 h-4 animate-pulse"></i>
+                                <span class="font-bold text-[10px] tracking-wider uppercase">Live Network Extract</span>
+                            </div>
+                            <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-2">Instant summary for "${query}":</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${summary || "Direct summary data retrieval complete."}</p>
+                        </div>
+
+                        <!-- Real-time search results list -->
+                        <div class="space-y-6">
+                            ${results.map((result, idx) => `
+                                <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-500/40 dark:hover:border-blue-400/40 hover:shadow-md transition-all group">
+                                    <div class="text-[11px] text-slate-400 flex items-center mb-1">
+                                        <i data-lucide="globe" class="w-3 h-3 mr-1"></i>
+                                        <span>${result.url}</span>
+                                    </div>
+                                    <h3 class="text-md font-bold text-blue-600 dark:text-sky-400 group-hover:underline cursor-pointer" onclick="navigateActiveTabTo('${result.url}')">
+                                        ${result.title}
+                                    </h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${result.snippet}</p>
+                                    
+                                    <div class="mt-3 flex items-center space-x-2">
+                                        <button onclick="navigateActiveTabTo('${result.url}')" class="text-[10px] bg-slate-100 hover:bg-blue-600 hover:text-white dark:bg-slate-800 dark:hover:bg-blue-600 px-2 py-1 rounded text-slate-600 dark:text-slate-300 transition-all font-semibold flex items-center">
+                                            <i data-lucide="book-open" class="w-3 h-3 mr-1"></i>
+                                            Proxy Clean-Reader Mode
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+
+                const subSearchInput = document.getElementById('search-bar-input');
+                subSearchInput.focus();
+                subSearchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        executeSubSearch();
+                    }
+                });
+
+                logToConsole(`Rendered real-time results for query: "${query}"`, 'system');
+
+            } catch (err) {
+                logToConsole(`Live search error: ${err.message}`, 'error');
+            }
+        }
+
+        // BUILT-IN SEAPHIRE WEBPAGE: HTML SANDBOX CODE RUNNER (Like CodePen!)
+        function renderCodeSandbox(container) {
+            container.innerHTML = `
+                <div class="flex flex-col h-full bg-slate-900 text-slate-200">
+                    <div class="bg-slate-950 p-3 border-b border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="code" class="w-5 h-5 text-emerald-500"></i>
+                            <span class="font-bold text-xs uppercase tracking-wider">Live HTML/CSS Playground</span>
+                        </div>
+                        <button onclick="runSandboxCode()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded flex items-center transition-colors">
+                            <i data-lucide="play" class="w-3.5 h-3.5 mr-1.5"></i> Run Code
+                        </button>
+                    </div>
+
+                    <div class="flex-1 flex flex-col md:flex-row overflow-hidden divide-y md:divide-y-0 md:divide-x divide-slate-800">
+                        <!-- Editor Input Area -->
+                        <div class="flex-1 flex flex-col min-h-[150px]">
+                            <div class="bg-slate-900 px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800">HTML Editor</div>
+                            <textarea id="sandbox-editor" class="flex-1 bg-slate-950 text-emerald-400 p-4 font-mono text-xs outline-none border-none resize-none focus:ring-0" autocomplete="off" spellcheck="false"><!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #4f46e5, #06b6d4);
+            color: white;
+            padding-top: 50px;
+        }
+        h1 { font-size: 32px; text-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <h1>Hello Seaphire OS Workspace!</h1>
+    <p>Write your own code and press run.</p>
+</body>
+</html></textarea>
+                        </div>
+                        
+                        <!-- Real-time Preview Output Area -->
+                        <div class="flex-1 flex flex-col min-h-[150px] bg-white">
+                            <div class="bg-slate-100 text-slate-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border-b border-slate-200 flex justify-between items-center">
+                                <span>Output Preview</span>
+                                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </div>
+                            <iframe id="sandbox-preview" class="flex-1 bg-white border-none w-full h-full"></iframe>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            runSandboxCode();
+        }
+
+        function runSandboxCode() {
+            const code = document.getElementById('sandbox-editor').value;
+            const preview = document.getElementById('sandbox-preview');
+            const previewDoc = preview.contentDocument || preview.contentWindow.document;
+            previewDoc.open();
+            previewDoc.write(code);
+            previewDoc.close();
+            logToConsole('Sandbox playground code refreshed successfully.', 'info');
+        }
+
+        // BUILT-IN SEAPHIRE APP: RETRO MINI ARCADE GAME (Space Dodger)
+        function renderArcadeApp(container) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full bg-slate-950 text-white p-6 relative">
+                    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl text-center">
+                        <div class="flex items-center justify-center space-x-2 text-red-500 mb-2">
+                            <i data-lucide="gamepad-2" class="w-6 h-6 animate-bounce"></i>
+                            <h2 class="text-xl font-extrabold tracking-widest uppercase">Seaphire Galaxy</h2>
+                        </div>
+                        <p class="text-slate-400 text-xs mb-4">Dodge the space asteroids! Use your mouse/finger to control the spaceship.</p>
+                        
+                        <!-- Canvas Gameboard -->
+                        <div class="relative bg-black rounded-xl overflow-hidden border-2 border-slate-800 max-w-full aspect-[4/3] w-full flex items-center justify-center">
+                            <canvas id="game-canvas" width="400" height="300" class="w-full h-full cursor-none block"></canvas>
+                            <div id="game-start-panel" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
+                                <h3 class="text-lg font-bold text-white mb-2">SPACE DODGER</h3>
+                                <button onclick="startArcadeGame()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-6 py-2.5 rounded-full transition-transform transform active:scale-95">START MISSION</button>
+                            </div>
+                        </div>
+
+                        <!-- Score Panel -->
+                        <div class="mt-4 flex justify-between items-center text-xs">
+                            <span class="text-slate-400 font-semibold">High Score: <span id="game-highscore" class="font-mono text-white">0</span></span>
+                            <span class="text-slate-400 font-semibold">Score: <span id="game-score" class="font-mono text-white">0</span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            
+            // Check highscore
+            const savedHighScore = localStorage.getItem('arcade_highscore') || 0;
+            document.getElementById('game-highscore').textContent = savedHighScore;
+        }
+
+        let gameLoopId = null;
+        function startArcadeGame() {
+            document.getElementById('game-start-panel').classList.add('hidden');
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let player = { x: 200, y: 260, width: 20, height: 20, speed: 5 };
+            let asteroids = [];
+            let score = 0;
+            let gameOver = false;
+            let speedMultiplier = 1;
+
+            // Mouse / Touch controller logic
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                player.x = (e.clientX - rect.left) / rect.width * canvas.width - player.width / 2;
+                player.y = (e.clientY - rect.top) / rect.height * canvas.height - player.height / 2;
+                
+                // Boundaries limit
+                if (player.x < 0) player.x = 0;
+                if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+                if (player.y < 0) player.y = 0;
+                if (player.y > canvas.height - player.height) player.y = canvas.height - player.height;
+            });
+
+            function spawnAsteroid() {
+                if (Math.random() < 0.08) {
+                    asteroids.push({
+                        x: Math.random() * canvas.width,
+                        y: -10,
+                        size: Math.random() * 15 + 10,
+                        speed: (Math.random() * 3 + 2) * speedMultiplier
+                    });
+                }
+            }
+
+            function update() {
+                if (gameOver) return;
+                
+                score++;
+                speedMultiplier = 1 + (score / 1000);
+                document.getElementById('game-score').textContent = score;
+
+                spawnAsteroid();
+
+                asteroids.forEach((asteroid, idx) => {
+                    asteroid.y += asteroid.speed;
+                    
+                    // Collision check
+                    if (
+                        asteroid.x < player.x + player.width &&
+                        asteroid.x + asteroid.size > player.x &&
+                        asteroid.y < player.y + player.height &&
+                        asteroid.y + asteroid.size > player.y
+                    ) {
+                        gameOver = true;
+                    }
+
+                    if (asteroid.y > canvas.height) {
+                        asteroids.splice(idx, 1);
+                    }
+                });
+            }
+
+            function draw() {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Starfield background
+                ctx.fillStyle = '#ffffff';
+                for (let i = 0; i < 15; i++) {
+                    ctx.fillRect((i * 31 + score) % canvas.width, (i * 17) % canvas.height, 1.5, 1.5);
+                }
+
+                // Spaceship Design
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.moveTo(player.x + player.width / 2, player.y);
+                ctx.lineTo(player.x, player.y + player.height);
+                ctx.lineTo(player.x + player.width, player.y + player.height);
+                ctx.closePath();
+                ctx.fill();
+
+                // Thruster glow
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(player.x + player.width / 2 - 3, player.y + player.height, 6, 5);
+
+                // Draw Asteroids
+                ctx.fillStyle = '#94a3b8';
+                asteroids.forEach((ast) => {
+                    ctx.beginPath();
+                    ctx.arc(ast.x + ast.size/2, ast.y + ast.size/2, ast.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                if (gameOver) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '20px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('MISSION FAILED', canvas.width / 2, canvas.height / 2 - 10);
+                    
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText('Press SPACE or TAP to Restart', canvas.width / 2, canvas.height / 2 + 15);
+
+                    const high = localStorage.getItem('arcade_highscore') || 0;
+                    if (score > high) {
+                        localStorage.setItem('arcade_highscore', score);
+                        document.getElementById('game-highscore').textContent = score;
+                    }
+                }
+            }
+
+            function loop() {
+                update();
+                draw();
+                if (!gameOver) {
+                    gameLoopId = requestAnimationFrame(loop);
+                }
+            }
+
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            loop();
+
+            // Restart handler
+            window.addEventListener('keydown', function restart(e) {
+                if (e.key === ' ' && gameOver) {
+                    window.removeEventListener('keydown', restart);
+                    startArcadeGame();
+                }
+            });
+        }
+
+        // BUILT-IN SEAPHIRE APP: CREATIVE PAINT CANVAS
+        function renderPaintApp(container) {
+            container.innerHTML = `
+                <div class="flex flex-col h-full bg-slate-100 dark:bg-slate-900 p-4">
+                    <div class="bg-white dark:bg-slate-950 p-3 rounded-t-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="palette" class="w-5 h-5 text-yellow-500"></i>
+                            <span class="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">Paint Workshop</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="paint-color" value="#3b82f6" class="w-8 h-8 rounded border-none cursor-pointer bg-transparent" />
+                            <select id="paint-size" class="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 p-1.5 rounded-md text-slate-700 dark:text-slate-300">
+                                <option value="2">Fine Pen (2px)</option>
+                                <option value="5" selected>Medium Marker (5px)</option>
+                                <option value="12">Thick Brush (12px)</option>
+                                <option value="30">Sponge (30px)</option>
+                            </select>
+                            <button onclick="clearPaintCanvas()" class="bg-red-50 hover:bg-red-100 dark:bg-red-950/20 text-red-600 font-bold text-xs px-3 py-1.5 rounded transition-colors flex items-center">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1.5"></i> Clear Canvas
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 bg-white border-x border-b border-slate-200 dark:border-slate-800 rounded-b-xl overflow-hidden relative shadow-inner">
+                        <canvas id="paint-canvas" class="w-full h-full cursor-crosshair block bg-white"></canvas>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            setTimeout(initPaintCanvas, 100);
+        }
+
+        function initPaintCanvas() {
+            const canvas = document.getElementById('paint-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            
+            // Adjust to responsive size bounding rect
+            const rect = canvas.parentNode.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            let drawing = false;
+
+            canvas.addEventListener('mousedown', (e) => { drawing = true; drawPaint(e); });
+            canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
+            canvas.addEventListener('mousemove', drawPaint);
+
+            // Responsive touch options
+            canvas.addEventListener('touchstart', (e) => { drawing = true; drawPaint(e.touches[0]); });
+            canvas.addEventListener('touchend', () => { drawing = false; ctx.beginPath(); });
+            canvas.addEventListener('touchmove', (e) => { drawPaint(e.touches[0]); });
+
+            function drawPaint(e) {
+                if (!drawing) return;
+
+                const col = document.getElementById('paint-color').value;
+                const size = document.getElementById('paint-size').value;
+                const clientRect = canvas.getBoundingClientRect();
+
+                ctx.lineWidth = size;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = col;
+
+                const x = e.clientX - clientRect.left;
+                const y = e.clientY - clientRect.top;
+
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+        }
+
+        function clearPaintCanvas() {
+            const canvas = document.getElementById('paint-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                logToConsole('Drawing canvas state reset.', 'info');
+            }
+        }
+
+        // VIRTUAL WEBPAGE: DEFAULT FALLBACK VIEWPORT
+        function renderFallbackPage(container, url) {
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto px-6 py-16 text-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center mx-auto mb-6 text-slate-400">
+                        <i data-lucide="globe" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-lg font-extrabold text-slate-800 dark:text-slate-200">${url}</h3>
+                    <p class="text-xs text-amber-600 dark:text-amber-400 font-semibold mt-2 flex items-center justify-center">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 mr-1.5"></i>
+                        Offline/Emulated Protocol View
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 leading-relaxed max-w-md mx-auto">
+                        Please enter search keywords or valid resource URLs in the omnibox to fetch real articles directly!
+                    </p>
+                    <div class="mt-8 flex justify-center space-x-2">
+                        <button onclick="navigateActiveTabTo('seaphire://start')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors">Go Home</button>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function executeHomeSearch() {
+            const val = document.getElementById('home-search-input').value;
+            if (val.trim()) {
+                navigateActiveTabTo(val);
+            }
+        }
+
+        // EVENT LISTENERS REGISTER
+        function initEventListeners() {
+            const omnibox = document.getElementById('omnibox');
+            omnibox.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    navigateActiveTabTo(omnibox.value);
+                    omnibox.blur();
+                }
+            });
+
+            document.getElementById('btn-back').addEventListener('click', () => {
+                const tab = state.tabs.find(t => t.id === state.activeTabId);
+                if (tab && tab.historyIndex > 0) {
+                    tab.historyIndex--;
+                    tab.url = tab.history[tab.historyIndex];
+                    loadTabContent(tab.id);
+                }
+            });
+
+            document.getElementById('btn-forward').addEventListener('click', () => {
+                const tab = state.tabs.find(t => t.id === state.activeTabId);
+                if (tab && tab.historyIndex < tab.history.length - 1) {
+                    tab.historyIndex++;
+                    tab.url = tab.history[tab.historyIndex];
+                    loadTabContent(tab.id);
+                }
+            });
+
+            document.getElementById('btn-reload').addEventListener('click', () => {
+                const reloadIcon = document.getElementById('reload-icon');
+                reloadIcon.classList.add('animate-spin');
+                loadTabContent(state.activeTabId);
+                setTimeout(() => reloadIcon.classList.remove('animate-spin'), 1000);
+            });
+
+            document.getElementById('btn-home').addEventListener('click', () => {
+                navigateActiveTabTo('seaphire://start');
+            });
+
+            document.getElementById('btn-new-tab').addEventListener('click', () => {
+                createNewTab();
+            });
+
+            document.getElementById('btn-sidebar-bookmarks').addEventListener('click', () => {
+                toggleLibrarySidebar();
+            });
+            document.getElementById('btn-close-sidebar').addEventListener('click', () => {
+                toggleLibrarySidebar(false);
+            });
+
+            document.getElementById('btn-devtools').addEventListener('click', () => {
+                toggleDevTools();
+            });
+            document.getElementById('btn-close-devtools').addEventListener('click', () => {
+                toggleDevTools(false);
+            });
+            document.getElementById('btn-clear-console').addEventListener('click', () => {
+                document.getElementById('console-logs').innerHTML = '';
+                logToConsole('Console outputs cleared.', 'system');
+            });
+
+            const btnMenu = document.getElementById('btn-menu');
+            const menu = document.getElementById('options-menu');
+            btnMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!menu.classList.contains('hidden') && !menu.contains(e.target) && e.target !== btnMenu) {
+                    menu.classList.add('hidden');
+                }
+            });
+
+            document.getElementById('menu-new-tab').addEventListener('click', () => {
+                createNewTab();
+                menu.classList.add('hidden');
+            });
+
+            document.getElementById('menu-bookmarks').addEventListener('click', () => {
+                toggleLibrarySidebar(true, 'bookmarks');
+                menu.classList.add('hidden');
+            });
+
+            document.getElementById('menu-clear-all').addEventListener('click', () => {
+                state.history = [];
+                localStorage.removeItem('seaphire_history_v2');
+                logToConsole('Local history cache cleared.', 'system');
+                renderSidebar();
+                menu.classList.add('hidden');
+                triggerAlert('System Notification', 'Browsing caches have been completely flushed.', 'trash-2', 'red');
+            });
+
+            document.getElementById('engine-select').addEventListener('change', (e) => {
+                state.selectedEngine = e.target.value;
+                localStorage.setItem('seaphire_search_engine_v2', e.target.value);
+                logToConsole(`Updated search engine core to: ${e.target.value}`, 'system');
+                menu.classList.add('hidden');
+            });
+
+            document.getElementById('btn-bookmark').addEventListener('click', () => {
+                const currentTab = state.tabs.find(t => t.id === state.activeTabId);
+                if (!currentTab) return;
+
+                const existingIdx = state.bookmarks.findIndex(bm => bm.url === currentTab.url);
+                if (existingIdx > -1) {
+                    state.bookmarks.splice(existingIdx, 1);
+                    triggerAlert('Bookmark Removed', 'Page deleted from favorites.', 'star', 'indigo');
+                } else {
+                    state.bookmarks.push({ title: currentTab.title, url: currentTab.url });
+                    triggerAlert('Bookmark Saved', `Successfully bookmarked: "${currentTab.title}"`, 'star', 'amber');
+                }
+                
+                localStorage.setItem('seaphire_bookmarks_v2', JSON.stringify(state.bookmarks));
+                renderBookmarksBar();
+                updateNavigationButtons();
+            });
+
+            document.getElementById('sidebar-tab-bookmarks').addEventListener('click', () => {
+                setLibraryTab('bookmarks');
+            });
+            document.getElementById('sidebar-tab-history').addEventListener('click', () => {
+                setLibraryTab('history');
+            });
+
+            document.getElementById('btn-toggle-dark').addEventListener('click', () => {
+                const docRoot = document.documentElement;
+                const icon = document.getElementById('dark-mode-icon');
+                if (docRoot.classList.contains('dark')) {
+                    docRoot.classList.remove('dark');
+                    icon.setAttribute('data-lucide', 'moon');
+                } else {
+                    docRoot.classList.add('dark');
+                    icon.setAttribute('data-lucide', 'sun');
+                }
+                lucide.createIcons();
+            });
+
+            document.getElementById('btn-close-alert').addEventListener('click', () => {
+                closeAlert();
+            });
+
+            // Developer Console Command parser
+            const consoleInput = document.getElementById('console-input');
+            consoleInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const code = consoleInput.value.trim();
+                    if (!code) return;
+
+                    logToConsole(`> ${code}`, 'log');
+                    
+                    try {
+                        if (code.toLowerCase() === 'help') {
+                            logToConsole('Commands: help, clear, version, theme, alert [message], load [url]', 'info');
+                        } else if (code.toLowerCase() === 'clear') {
+                            document.getElementById('console-logs').innerHTML = '';
+                        } else if (code.toLowerCase() === 'version') {
+                            logToConsole('Seaphire WebOS Core Engine Build v3.0.1-Stable', 'system');
+                        } else if (code.toLowerCase() === 'theme') {
+                            document.getElementById('btn-toggle-dark').click();
+                        } else if (code.toLowerCase().startsWith('alert ')) {
+                            triggerAlert('Console Notification', code.substring(6), 'terminal', 'emerald');
+                        } else if (code.toLowerCase().startsWith('load ')) {
+                            navigateActiveTabTo(code.substring(5));
+                        } else {
+                            const result = eval(code);
+                            logToConsole(`Result: ${result}`, 'system');
+                        }
+                    } catch (err) {
+                        logToConsole(`Error: ${err.message}`, 'error');
+                    }
+
+                    consoleInput.value = '';
+                }
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 't') {
+                    e.preventDefault();
+                    createNewTab();
+                } else if (e.ctrlKey && e.key === 'w') {
+                    e.preventDefault();
+                    closeTab(state.activeTabId);
+                } else if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    toggleLibrarySidebar();
+                }
+            });
+        }
+
+        // VISUAL DISPLAY STATE CONTROLLERS
+        function toggleLibrarySidebar(forcedState = null, tabFocus = 'bookmarks') {
+            const sidebar = document.getElementById('library-sidebar');
+            const toggleState = forcedState !== null ? forcedState : sidebar.classList.contains('hidden');
+
+            if (toggleState) {
+                sidebar.classList.remove('hidden');
+                setTimeout(() => sidebar.classList.remove('-translate-x-full'), 10);
+                setLibraryTab(tabFocus);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                setTimeout(() => sidebar.classList.add('hidden'), 300);
+            }
+        }
+
+        function toggleDevTools(forcedState = null) {
+            const devtools = document.getElementById('devtools-sidebar');
+            const toggleState = forcedState !== null ? forcedState : devtools.classList.contains('hidden');
+
+            if (toggleState) {
+                devtools.classList.remove('hidden');
+                setTimeout(() => devtools.classList.remove('translate-x-full'), 10);
+            } else {
+                devtools.classList.add('translate-x-full');
+                setTimeout(() => devtools.classList.add('hidden'), 300);
+            }
+        }
+
+        function setLibraryTab(tab) {
+            state.sidebarTab = tab;
+            const bksBtn = document.getElementById('sidebar-tab-bookmarks');
+            const histBtn = document.getElementById('sidebar-tab-history');
+
+            if (tab === 'bookmarks') {
+                bksBtn.className = "flex-1 py-2 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 bg-slate-100/50 dark:bg-slate-800/30";
+                histBtn.className = "flex-1 py-2 text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800";
+            } else {
+                histBtn.className = "flex-1 py-2 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 bg-slate-100/50 dark:bg-slate-800/30";
+                bksBtn.className = "flex-1 py-2 text-slate-500 dark:text-slate-400 border-b-2 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800";
+            }
+            renderSidebar();
+        }
+    </script>
+</body>
+</html>

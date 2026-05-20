@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seaphire Terminal Terminal // Active Bash v5.1</title>
+    <!-- Tailwind CSS for high-speed utility layout structure -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap');
+
+        :root {
+            --term-green: #33ff33;
+            --term-green-dim: #11aa11;
+            --term-glow: rgba(51, 255, 51, 0.25);
+            --term-bg: #050a05;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        /* Scanline CRT Overlay Effect */
+        .crt-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.65;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            background-color: var(--term-bg);
+            color: var(--term-green);
+            text-shadow: 0 0 5px var(--term-glow);
+            scrollbar-width: thin;
+            scrollbar-color: var(--term-green) var(--term-bg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--term-bg);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--term-green-dim);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--term-green);
+        }
+
+        .cursor-blink::after {
+            content: '█';
+            animation: blink 0.9s infinite;
+            color: var(--term-green);
+            margin-left: 3px;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        /* CRT flicker effect */
+        .crt-flicker {
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.99; }
+            50% { opacity: 1; }
+            100% { opacity: 0.99; }
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative overflow-hidden flex flex-col p-4 crt-flicker">
+
+    <!-- CRT Scanline layer -->
+    <div class="crt-overlay"></div>
+
+    <!-- Terminal Frame Header -->
+    <header class="flex justify-between items-center border-b border-green-500/30 pb-2 mb-4 shrink-0 select-none">
+        <div class="flex items-center gap-3">
+            <div class="flex gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-red-500/60 border border-red-500/80"></span>
+                <span class="w-3 h-3 rounded-full bg-yellow-500/60 border border-yellow-500/80"></span>
+                <span class="w-3 h-3 rounded-full bg-green-500/60 border border-green-500/80"></span>
+            </div>
+            <span class="text-xs font-bold tracking-wider uppercase text-green-400">bash @ seaphireOS v5.1 - Core Node</span>
+        </div>
+        <div class="text-[10px] text-green-500/60 font-mono tracking-widest uppercase">
+            Status: Active Link
+        </div>
+    </header>
+
+    <!-- Terminal Command Area -->
+    <main id="terminal-screen" class="flex-1 overflow-y-auto pr-2 flex flex-col gap-2 relative">
+        <div id="terminal-history" class="space-y-1.5 text-xs md:text-sm">
+            <div class="text-green-400 font-bold mb-2">Welcome to Seaphire Virtual Linux Environment (v5.1-LST)</div>
+            <div class="text-green-500/80 mb-4">Type <span class="underline font-bold text-white">help</span> to view all authorized unix shell commands. Custom directories and file system are persistent in this window session.</div>
+        </div>
+
+        <!-- CLI Prompt Bar -->
+        <div class="flex items-center gap-2 text-xs md:text-sm shrink-0">
+            <span class="text-green-400 font-bold select-none whitespace-nowrap" id="prompt-label">guest@seaphire:~$</span>
+            <div class="relative flex-1">
+                <input type="text" id="terminal-input" autocomplete="off" spellcheck="false" class="w-full bg-transparent border-none outline-none text-green-300 focus:ring-0 p-0 font-mono cursor-default caret-transparent" autofocus>
+                <!-- Blinking green box cursor -->
+                <span id="virtual-cursor" class="absolute pointer-events-none text-green-300 font-mono cursor-blink" style="left: 0px;"></span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Interactive Nano File Editor modal overlay -->
+    <div id="nano-editor" class="hidden absolute inset-4 border border-green-500/50 bg-black/95 rounded-lg z-[1000] p-4 flex flex-col justify-between">
+        <div class="flex justify-between items-center border-b border-green-500/30 pb-2 text-xs">
+            <span class="font-bold text-green-400" id="nano-title">NANO EDITOR // File: file.txt</span>
+            <span class="text-green-500/60">Ctrl+S: Save & Close | Esc: Abandon</span>
+        </div>
+        <textarea id="nano-textarea" class="flex-1 bg-transparent border-none outline-none text-green-300 font-mono text-sm resize-none mt-3 p-1" placeholder="Write inside neural configuration..."></textarea>
+        <div class="flex gap-4 border-t border-green-500/30 pt-2 text-[10px] text-green-400/80 select-none">
+            <span>^G Get Help</span>
+            <span>^O WriteOut</span>
+            <span>^R Read File</span>
+            <span>^X Exit Editor</span>
+        </div>
+    </div>
+
+    <!-- SYSTEM MODULE ARCHITECTURE JS -->
+    <script>
+        // ----------------------------------------------------------------------
+        // VIRTUAL PERSISTENT MEMORY FILESYSTEM
+        // ----------------------------------------------------------------------
+        let filesystem = {
+            "root": {
+                "type": "dir",
+                "contents": {
+                    "home": {
+                        "type": "dir",
+                        "contents": {
+                            "operator": {
+                                "type": "dir",
+                                "contents": {
+                                    "welcome.txt": { "type": "file", "content": "Welcome back to Seaphire Terminal Node.\nEverything is green, clean, and fully operational." },
+                                    "system_manifest.cfg": { "type": "file", "content": "core_security=active\nfirewall_level=9\nneural_bridge=secure\nenvironment=development" }
+                                }
+                            }
+                        }
+                    },
+                    "var": {
+                        "type": "dir",
+                        "contents": {
+                            "system_logs.log": { "type": "file", "content": "[11:22:15] Neural matrix loaded successfully.\n[11:22:16] Scanning sector 4... [OK]" }
+                        }
+                    },
+                    "bin": {
+                        "type": "dir",
+                        "contents": {
+                            "readme.txt": { "type": "file", "content": "Core system execution files stored inside hardware chips." }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Navigation state variables
+        let currentPath = ["root", "home", "operator"];
+        let commandHistory = [];
+        let historyIndex = -1;
+        let activeEditingFile = null;
+
+        const terminalScreen = document.getElementById('terminal-screen');
+        const historyContainer = document.getElementById('terminal-history');
+        const terminalInput = document.getElementById('terminal-input');
+        const virtualCursor = document.getElementById('virtual-cursor');
+        const promptLabel = document.getElementById('prompt-label');
+
+        // Theme Variables
+        const themes = {
+            green: { bg: '#050a05', text: '#33ff33', glow: 'rgba(51, 255, 51, 0.25)' },
+            amber: { bg: '#0b0600', text: '#ffb300', glow: 'rgba(255, 179, 0, 0.25)' },
+            cyan: { bg: '#00080d', text: '#00e5ff', glow: 'rgba(0, 229, 255, 0.25)' },
+            white: { bg: '#0a0a0a', text: '#ffffff', glow: 'rgba(255, 255, 255, 0.15)' }
+        };
+
+        // ----------------------------------------------------------------------
+        // DIRECTORY/PATH UTILITIES
+        // ----------------------------------------------------------------------
+        function getDirectory(pathArray) {
+            let cur = filesystem;
+            for (let part of pathArray) {
+                if (cur && cur[part] && cur[part].type === 'dir') {
+                    cur = cur[part].contents;
+                } else {
+                    return null;
+                }
+            }
+            return cur;
+        }
+
+        function getDisplayPath() {
+            // Converts internal path structure [root, home, operator] to display format e.g. /home/operator
+            const slice = currentPath.slice(1);
+            return slice.length === 0 ? "/" : "/" + slice.join("/");
+        }
+
+        function updatePromptLabel() {
+            promptLabel.textContent = `operator@seaphire:${getDisplayPath()}$`;
+        }
+
+        // ----------------------------------------------------------------------
+        // TERMINAL FEED WRITER
+        // ----------------------------------------------------------------------
+        function printLine(text, styleClass = "text-green-300") {
+            const line = document.createElement('div');
+            line.className = `leading-relaxed font-mono whitespace-pre-wrap ${styleClass}`;
+            line.innerHTML = text;
+            historyContainer.appendChild(line);
+            terminalScreen.scrollTop = terminalScreen.scrollHeight;
+        }
+
+        // ----------------------------------------------------------------------
+        // INTERACTIVE CURSOR TRACKING
+        // ----------------------------------------------------------------------
+        function syncVirtualCursor() {
+            const val = terminalInput.value;
+            // Measure string width dynamically to slide the custom cursor
+            const textWidthHelper = document.createElement('span');
+            textWidthHelper.style.font = getComputedStyle(terminalInput).font;
+            textWidthHelper.style.visibility = 'hidden';
+            textWidthHelper.style.position = 'absolute';
+            textWidthHelper.textContent = val;
+            document.body.appendChild(textWidthHelper);
+            
+            const offsetWidth = textWidthHelper.getBoundingClientRect().width;
+            virtualCursor.style.left = `${offsetWidth}px`;
+            document.body.removeChild(textWidthHelper);
+        }
+
+        terminalInput.addEventListener('input', syncVirtualCursor);
+        document.addEventListener('click', () => terminalInput.focus());
+
+        // ----------------------------------------------------------------------
+        // NANO IN-TERMINAL FILE EDITOR LOGIC
+        // ----------------------------------------------------------------------
+        const nanoEditor = document.getElementById('nano-editor');
+        const nanoTextArea = document.getElementById('nano-textarea');
+        const nanoTitle = document.getElementById('nano-title');
+
+        function openNano(filename, content) {
+            activeEditingFile = filename;
+            nanoTitle.textContent = `NANO EDITOR // File: ${filename}`;
+            nanoTextArea.value = content;
+            nanoEditor.classList.remove('hidden');
+            nanoTextArea.focus();
+        }
+
+        function saveAndCloseNano() {
+            if (activeEditingFile) {
+                const dir = getDirectory(currentPath);
+                if (dir) {
+                    dir[activeEditingFile] = {
+                        type: "file",
+                        content: nanoTextArea.value
+                    };
+                    printLine(`[NANO] Saved file '${activeEditingFile}' dynamically to filesystem.`, "text-yellow-400");
+                }
+            }
+            closeNano();
+        }
+
+        function closeNano() {
+            nanoEditor.classList.add('hidden');
+            activeEditingFile = null;
+            terminalInput.focus();
+            terminalScreen.scrollTop = terminalScreen.scrollHeight;
+        }
+
+        // Nano key listeners
+        window.addEventListener('keydown', (e) => {
+            if (!nanoEditor.classList.contains('hidden')) {
+                // Ctrl + S: Save file
+                if (e.ctrlKey && e.key.toLowerCase() === 's') {
+                    e.preventDefault();
+                    saveAndCloseNano();
+                }
+                // Escape: Close editor without saving
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeNano();
+                }
+            }
+        });
+
+        // ----------------------------------------------------------------------
+        // REAL unix / linux commands logic parser
+        // ----------------------------------------------------------------------
+        function executeCommand(inputString) {
+            const trimmed = inputString.trim();
+            if (!trimmed) return;
+
+            // Push to terminal history tracker
+            commandHistory.push(trimmed);
+            historyIndex = commandHistory.length;
+
+            printLine(`${promptLabel.textContent} ${trimmed}`, "text-green-500/70 font-bold");
+
+            const args = trimmed.split(/\s+/);
+            const cmd = args[0].toLowerCase();
+            const param = args[1];
+
+            const dir = getDirectory(currentPath);
+
+            switch (cmd) {
+                case 'help':
+                    printLine("=========================================================================");
+                    printLine("SEAPHIRE COMPREHENSIVE UNIX TERMINAL INTERFACE // AUTHORIZED UTILITIES:");
+                    printLine("=========================================================================");
+                    printLine("  ls                 - List directory contents dynamically.");
+                    printLine("  cd [dir]           - Navigate between system folders.");
+                    printLine("  pwd                - Print directory path map of your location.");
+                    printLine("  cat [file]         - Decode structure and view raw text files.");
+                    printLine("  touch [file]       - Create a new in-memory file container.");
+                    printLine("  mkdir [dir]        - Make a new child directory branch.");
+                    printLine("  rm [file/dir]      - Wipe virtual directories or file clusters.");
+                    printLine("  nano [file]        - Launch custom in-terminal text editor frame.");
+                    printLine("  theme [amber/cyan] - Modulate terminal phosphorus accent themes.");
+                    printLine("  ping [host]        - Test round-trip latency to a destination address.");
+                    printLine("  neofetch           - Display local architecture configuration blocks.");
+                    printLine("  whoami             - Query credentials of active operator node.");
+                    printLine("  clear              - Flush terminal buffers.");
+                    printLine("  echo [message]     - Log stream message on console node.");
+                    break;
+
+                case 'ls':
+                    if (dir) {
+                        const keys = Object.keys(dir);
+                        if (keys.length === 0) {
+                            printLine("(Directory is empty)", "text-green-500/40 italic");
+                        } else {
+                            keys.forEach(key => {
+                                const entry = dir[key];
+                                if (entry.type === 'dir') {
+                                    printLine(`[DIR]  ${key}/`, "text-blue-400 font-bold");
+                                } else {
+                                    printLine(`[FILE] ${key}`, "text-green-300");
+                                }
+                            });
+                        }
+                    }
+                    break;
+
+                case 'cd':
+                    if (!param || param === "~") {
+                        // Navigate home
+                        currentPath = ["root", "home", "operator"];
+                        updatePromptLabel();
+                    } else if (param === "..") {
+                        if (currentPath.length > 1) {
+                            currentPath.pop();
+                            updatePromptLabel();
+                        } else {
+                            printLine("cd: Already in root directory boundary.", "text-red-500");
+                        }
+                    } else {
+                        if (dir && dir[param]) {
+                            if (dir[param].type === 'dir') {
+                                currentPath.push(param);
+                                updatePromptLabel();
+                            } else {
+                                printLine(`cd: target '${param}' is a file, not a directory.`, "text-red-500");
+                            }
+                        } else {
+                            printLine(`cd: no such file or directory: ${param}`, "text-red-500");
+                        }
+                    }
+                    break;
+
+                case 'pwd':
+                    printLine(getDisplayPath());
+                    break;
+
+                case 'cat':
+                    if (!param) {
+                        printLine("cat: missing filename parameter. Example: 'cat welcome.txt'", "text-red-500");
+                    } else if (dir && dir[param]) {
+                        if (dir[param].type === 'file') {
+                            printLine(dir[param].content, "text-yellow-200/90 bg-black/30 p-2 border border-green-500/10 rounded my-1 font-mono");
+                        } else {
+                            printLine(`cat: target '${param}' is a directory.`, "text-red-500");
+                        }
+                    } else {
+                        printLine(`cat: file '${param}' not found in current directory.`, "text-red-500");
+                    }
+                    break;
+
+                case 'touch':
+                    if (!param) {
+                        printLine("touch: missing filename parameter.", "text-red-500");
+                    } else if (dir) {
+                        dir[param] = {
+                            type: "file",
+                            content: ""
+                        };
+                        printLine(`Created file '${param}'.`, "text-yellow-500/80");
+                    }
+                    break;
+
+                case 'mkdir':
+                    if (!param) {
+                        printLine("mkdir: missing directory name parameter.", "text-red-500");
+                    } else if (dir) {
+                        dir[param] = {
+                            type: "dir",
+                            contents: {}
+                        };
+                        printLine(`Created directory '${param}/'.`, "text-yellow-500/80");
+                    }
+                    break;
+
+                case 'rm':
+                    if (!param) {
+                        printLine("rm: missing file/directory target parameter.", "text-red-500");
+                    } else if (dir && dir[param]) {
+                        delete dir[param];
+                        printLine(`Removed target resource node '${param}'.`, "text-red-400");
+                    } else {
+                        printLine(`rm: target '${param}' not found in directory.`, "text-red-500");
+                    }
+                    break;
+
+                case 'nano':
+                    if (!param) {
+                        printLine("nano: missing file parameter. Example: 'nano notes.txt'", "text-red-500");
+                    } else if (dir) {
+                        if (dir[param] && dir[param].type === 'dir') {
+                            printLine(`nano: '${param}' is a directory.`, "text-red-500");
+                        } else {
+                            const initialContent = dir[param] ? dir[param].content : "";
+                            openNano(param, initialContent);
+                        }
+                    }
+                    break;
+
+                case 'theme':
+                    if (!param || !themes[param.toLowerCase()]) {
+                        printLine("Usage: theme [green / amber / cyan / white]", "text-yellow-400");
+                    } else {
+                        const activeTheme = themes[param.toLowerCase()];
+                        document.documentElement.style.setProperty('--term-bg', activeTheme.bg);
+                        document.documentElement.style.setProperty('--term-green', activeTheme.text);
+                        document.documentElement.style.setProperty('--term-green-dim', activeTheme.text + '99');
+                        document.documentElement.style.setProperty('--term-glow', activeTheme.glow);
+                        printLine(`Modulating spectral frequency to theme: [${param.toUpperCase()}]`, "text-yellow-400");
+                    }
+                    break;
+
+                case 'ping':
+                    if (!param) {
+                        printLine("ping: missing destination host parameter. Example: 'ping 1.1.1.1'", "text-red-500");
+                    } else {
+                        printLine(`PING ${param} (56 data bytes)...`);
+                        let seq = 1;
+                        const interval = setInterval(() => {
+                            if (seq <= 4) {
+                                printLine(`64 bytes from ${param}: icmp_seq=${seq} ttl=64 time=${(Math.random() * 15 + 10).toFixed(1)} ms`);
+                                seq++;
+                            } else {
+                                clearInterval(interval);
+                                printLine(`--- ${param} ping diagnostics complete. ---`);
+                            }
+                        }, 500);
+                    }
+                    break;
+
+                case 'neofetch':
+                    printLine(`
+ <span class="text-white">      /\\_/\\     </span>   <span class="text-green-400 font-bold">operator@seaphireOS-V5</span>
+ <span class="text-white">     ( o.o )    </span>   ------------------------
+ <span class="text-white">      > ^ <     </span>   OS: SeaphireOS v5.1 Kernel
+ Shell: Custom Virtual Shell Bash
+ Terminal Interface: CRT Phosphor emulation
+ Memory Core: Standalone Node Frame
+ CSS Graphics Engine: Pure Hardware GPU CSS3D
+                    `, "text-green-300 font-mono whitespace-pre");
+                    break;
+
+                case 'whoami':
+                    printLine("operator // Clearance Node: OMNISCIENT-LEVEL");
+                    break;
+
+                case 'clear':
+                    historyContainer.innerHTML = '';
+                    break;
+
+                case 'echo':
+                    const msg = args.slice(1).join(' ');
+                    printLine(msg);
+                    break;
+
+                default:
+                    printLine(`bash: command not found: ${cmd}. Type 'help' to audit system commands list.`, "text-red-500");
+            }
+        }
+
+        // ----------------------------------------------------------------------
+        // KEY LISTENERS (HISTORY TRACKING, EXECUTION)
+        // ----------------------------------------------------------------------
+        window.addEventListener('keydown', (e) => {
+            // Check if user is typing inside standard terminal
+            if (nanoEditor.classList.contains('hidden')) {
+                if (e.key === 'Enter') {
+                    const inputVal = terminalInput.value;
+                    terminalInput.value = '';
+                    syncVirtualCursor();
+                    executeCommand(inputVal);
+                }
+
+                // Up Arrow: History backward
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (commandHistory.length > 0 && historyIndex > 0) {
+                        historyIndex--;
+                        terminalInput.value = commandHistory[historyIndex];
+                        syncVirtualCursor();
+                    }
+                }
+
+                // Down Arrow: History forward
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (historyIndex < commandHistory.length - 1) {
+                        historyIndex++;
+                        terminalInput.value = commandHistory[historyIndex];
+                    } else {
+                        historyIndex = commandHistory.length;
+                        terminalInput.value = '';
+                    }
+                    syncVirtualCursor();
+                }
+
+                // Tab key: Autocomplete simulation
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const words = terminalInput.value.trim().split(/\s+/);
+                    if (words.length > 0) {
+                        const currentWord = words[words.length - 1].toLowerCase();
+                        const dir = getDirectory(currentPath);
+                        if (dir) {
+                            const files = Object.keys(dir);
+                            const matched = files.find(f => f.toLowerCase().startsWith(currentWord));
+                            if (matched) {
+                                words[words.length - 1] = matched;
+                                terminalInput.value = words.join(' ');
+                                syncVirtualCursor();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Initialize display configuration on window frame ready
+        updatePromptLabel();
+        syncVirtualCursor();
+    </script>
+</body>
+</html>
